@@ -1,0 +1,25 @@
+###
+GET http://localhost:8000/health
+//Register query
+###
+POST http://localhost:8000/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "michael@example.com",
+  "username": "maximas",
+  "first_name": "maichael",
+  "last_name": "maximas",
+  "phone": "string",
+  "password": "Maximas123",
+  "confirm_password": "Maximas123",
+  "role_ids": []
+}
+###
+POST http://localhost:8000/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "michael@example.com",
+  "password": "Maximas123"
+}
