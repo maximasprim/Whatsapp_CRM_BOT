@@ -4,6 +4,31 @@ import asyncio
 import os
 import sys
 
+# ── Register ALL models first before any queries run ─────────────────────────
+# SQLAlchemy resolves string-based relationships (e.g. "Customer" in Lead)
+# lazily at first query time. Every model must be imported here so they are
+# all registered before any repository or session code executes.
+from app.models.company import Company                                       # noqa: F401
+from app.models.customer import Customer                                     # noqa: F401
+from app.models.lead import Lead, LeadStage                                  # noqa: F401
+from app.models.product import Product                                       # noqa: F401
+from app.models.order import Order, OrderItem, Payment                      # noqa: F401
+from app.models.appointment import Appointment                               # noqa: F401
+from app.models.task import Task                                             # noqa: F401
+from app.models.followup import FollowUp                                     # noqa: F401
+from app.models.note import Note                                             # noqa: F401
+from app.models.campaign import Campaign, CampaignRecipient                 # noqa: F401
+from app.models.ticket import SupportTicket, TicketMessage                  # noqa: F401
+from app.models.tag import Tag                                               # noqa: F401
+from app.models.activity import Activity                                     # noqa: F401
+from app.models.notification import Notification                             # noqa: F401
+from app.models.conversation import Conversation, ConversationMessage       # noqa: F401
+from app.models.whatsapp_template import WhatsAppTemplate                   # noqa: F401
+from app.models.conversation_summary import ConversationSummary             # noqa: F401
+from app.models.knowledge_document import KnowledgeDocument, DocumentChunk  # noqa: F401
+from app.models.calendar_credential import CalendarCredential               # noqa: F401
+# ─────────────────────────────────────────────────────────────────────────────
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -15,8 +40,6 @@ from app.db_seed.permissions_data import generate_permission_catalogue
 from app.db_seed.roles_data import DEFAULT_ROLES
 from app.db_seed.whatsapp_templates_data import DEFAULT_WHATSAPP_TEMPLATES
 from app.models.auth import Permission, Role, User
-from app.models.lead import LeadStage
-from app.models.whatsapp_template import WhatsAppTemplate
 from app.repositories.auth import PermissionRepository, RoleRepository, UserRepository
 
 logger = get_logger(__name__)
@@ -58,7 +81,6 @@ async def seed_roles(session: AsyncSession, permission_map: dict[str, Permission
             is_system=role_config.get("is_system", False),
         )
 
-        # Resolve which permissions this role gets
         granted_codenames: set[str] = set()
         if role_config.get("resources") == "*":
             granted_codenames = set(permission_map.keys())
@@ -173,7 +195,57 @@ async def run_seed() -> None:
 
 def main() -> None:
     asyncio.run(run_seed())
+async def seed_roles(session: AsyncSession, permission_map: dict[str, Permission]) -> dict[str, Role]:
+    role_repo = RoleRepository(session)
+    role_map: dict[str, Role] = {}
+    created = 0
 
+    for role_name, role_config in DEFAULT_ROLES.items():
+        existing = await role_repo.get_by_name(role_name)
+        if existing:
+            role_map[role_name] = existing
+            continue
+
+        # Create the role first without touching permissions
+        role = Role(
+            name=role_name,
+            description=role_config["description"],
+            is_system=role_config.get("is_system", False),
+        )
+        session.add(role)
+        await session.flush()  # flush so role.id is assigned
+
+        # Resolve which permission codenames this role gets
+        granted_codenames: set[str] = set()
+        if role_config.get("resources") == "*":
+            granted_codenames = set(permission_map.keys())
+        elif "resources" in role_config:
+            for resource in role_config["resources"]:
+                granted_codenames.add(f"{resource}_manage")
+                for action in ("create", "read", "update", "delete"):
+                    granted_codenames.add(f"{resource}_{action}")
+        elif "resources_partial" in role_config:
+            for resource, actions in role_config["resources_partial"].items():
+                for action in actions:
+                    granted_codenames.add(f"{resource}_{action}")
+
+        # Insert into the junction table directly — avoids lazy load entirely
+        from app.models.auth import role_permissions
+        for codename in granted_codenames:
+            if codename in permission_map:
+                await session.execute(
+                    role_permissions.insert().values(
+                        role_id=role.id,
+                        permission_id=permission_map[codename].id,
+                    )
+                )
+
+        await session.flush()
+        role_map[role_name] = role
+        created += 1
+
+    logger.info("Roles seeded", created=created, total=len(DEFAULT_ROLES))
+    return role_map
 
 if __name__ == "__main__":
     main()

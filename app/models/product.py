@@ -6,6 +6,7 @@ from sqlalchemy import Boolean, Enum as SAEnum, Float, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
+
 from app.core.database.base import BaseModel
 
 

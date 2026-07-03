@@ -16,10 +16,44 @@ Content-Type: application/json
   "role_ids": []
 }
 ###
-POST http://localhost:8000/api/v1/auth/login
+POST http://localhost:8000/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "michael@example.com",
-  "password": "Maximas123"
+  "email": "admin@bot.com",
+  "password": "12345678Mm"
 }
+###
+PUT http://localhost:8000/api/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MGEzODJhMy05OTQ1LTRmY2YtOGUyMC04ZjdkODA0NjEyYzEiLCJpYXQiOjE3ODMwNjI1NjQsImV4cCI6MTc4MzA2NDM2NCwidHlwZSI6ImFjY2VzcyIsImp0aSI6ImM2ODRhZmY1LWI5MmUtNDI0Yi1hODljLTJmYmU1MjFhYjgyYSIsImVtYWlsIjoibWljaGFlbG13YXNhbWU2QGdtYWlsLmNvbSIsImlzX3N1cGVydXNlciI6ZmFsc2V9.ORcN296OnrqyvVKBnwNNglrCaq05LpcMC8VGWosq-KM
+Content-Type: application/json
+
+{
+    "email" : "michaelmwasame6@gmail.com"
+}
+
+###
+GET http://localhost:8000/api/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MGEzODJhMy05OTQ1LTRmY2YtOGUyMC04ZjdkODA0NjEyYzEiLCJpYXQiOjE3ODMwNjc1MjgsImV4cCI6MTc4MzA2OTMyOCwidHlwZSI6ImFjY2VzcyIsImp0aSI6ImNhNGIwNmM1LTk1NjEtNGZiMC1iZTY0LWQxNzYyZjNkNTNjMCIsImVtYWlsIjoibWljaGFlbG13YXNhbWU2QGdtYWlsLmNvbSIsImlzX3N1cGVydXNlciI6ZmFsc2V9.vkIF11d8_637MXTO36z3nhdY_0P8jYQBA6_G1RfbYTc
+###
+POST http://localhost:8000/api/auth/password-reset/request
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MGEzODJhMy05OTQ1LTRmY2YtOGUyMC04ZjdkODA0NjEyYzEiLCJpYXQiOjE3ODMwNjI1NjQsImV4cCI6MTc4MzA2NDM2NCwidHlwZSI6ImFjY2VzcyIsImp0aSI6ImM2ODRhZmY1LWI5MmUtNDI0Yi1hODljLTJmYmU1MjFhYjgyYSIsImVtYWlsIjoibWljaGFlbG13YXNhbWU2QGdtYWlsLmNvbSIsImlzX3N1cGVydXNlciI6ZmFsc2V9.ORcN296OnrqyvVKBnwNNglrCaq05LpcMC8VGWosq-KM
+Content-Type: application/json
+
+{
+    "email" : "michaelmwasame6@gmail.com"
+}
+###
+GET http://localhost:8000/api/users
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MGEzODJhMy05OTQ1LTRmY2YtOGUyMC04ZjdkODA0NjEyYzEiLCJpYXQiOjE3ODMwNjc1MjgsImV4cCI6MTc4MzA2OTMyOCwidHlwZSI6ImFjY2VzcyIsImp0aSI6ImNhNGIwNmM1LTk1NjEtNGZiMC1iZTY0LWQxNzYyZjNkNTNjMCIsImVtYWlsIjoibWljaGFlbG13YXNhbWU2QGdtYWlsLmNvbSIsImlzX3N1cGVydXNlciI6ZmFsc2V9.vkIF11d8_637MXTO36z3nhdY_0P8jYQBA6_G1RfbYTc
+###
+PUT http://localhost:8000/api/users/$2b$12$Hn3Agswb0RVIHlcXKQXah.O7nB85tI4PWQxsptbn4D30Np9eCKDfq
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MGEzODJhMy05OTQ1LTRmY2YtOGUyMC04ZjdkODA0NjEyYzEiLCJpYXQiOjE3ODMwNjc1MjgsImV4cCI6MTc4MzA2OTMyOCwidHlwZSI6ImFjY2VzcyIsImp0aSI6ImNhNGIwNmM1LTk1NjEtNGZiMC1iZTY0LWQxNzYyZjNkNTNjMCIsImVtYWlsIjoibWljaGFlbG13YXNhbWU2QGdtYWlsLmNvbSIsImlzX3N1cGVydXNlciI6ZmFsc2V9.vkIF11d8_637MXTO36z3nhdY_0P8jYQBA6_G1RfbYTc
+Content-Type: application/json
+
+{
+    "is_active": false
+}
+###
+DELETE http://localhost:8000/api/users/40a382a3-9945-4fcf-8e20-8f7d804612c1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMwODU4MDQsImV4cCI6MTc4MzA4NzYwNCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjA5ZTljODBjLTAzMTktNGRjZC04ZTExLTMyZTYwNThhY2Y2MyIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.hlEfyAvRY1Jb06XVXcLdBFCRMOFafNK7-RMcDjjy4KQ

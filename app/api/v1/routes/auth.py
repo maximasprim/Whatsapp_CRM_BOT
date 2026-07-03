@@ -18,6 +18,7 @@ from app.schemas.auth import (
     UserCreate,
     UserPasswordChange,
     UserResponse,
+    UserUpdate
 )
 from app.schemas.common import SuccessResponse
 from app.services.auth import AuthService
@@ -86,13 +87,13 @@ async def get_me(
 
 @router.put("/me", response_model=UserResponse)
 async def update_me(
-    data: dict,
+    data: UserUpdate,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserResponse:
     from app.schemas.auth import UserUpdate
     service = AuthService(session)
-    user = await service.update_user(current_user.id, UserUpdate(**data))
+    user = await service.update_user(current_user.id, data)
     return UserResponse.model_validate(user)
 
 

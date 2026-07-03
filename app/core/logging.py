@@ -43,7 +43,7 @@ def setup_logging() -> None:
         ],
         logger_factory=structlog.stdlib.LoggerFactory(),
         wrapper_class=structlog.stdlib.BoundLogger,
-        cache_logger_on_first_use=True,
+        cache_logger_on_first_use=False,
     )
 
     formatter = structlog.stdlib.ProcessorFormatter(

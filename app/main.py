@@ -103,7 +103,7 @@ def _register_routers(app: FastAPI) -> None:
     from app.api.v1.routes.rag import router as rag_router
     from app.api.v1.routes.calendar import router as calendar_router
 
-    prefix = "/api/v1"
+    prefix = "/api"
     app.include_router(auth_router, prefix=prefix)
     app.include_router(users_router, prefix=prefix)
     app.include_router(customers_router, prefix=prefix)
