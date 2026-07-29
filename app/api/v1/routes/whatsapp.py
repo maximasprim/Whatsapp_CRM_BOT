@@ -15,6 +15,8 @@ from app.models.auth import User
 from app.schemas.common import SuccessResponse
 from app.whatsapp.conversation_service import WhatsAppConversationService
 from app.whatsapp.webhook_parser import parse_webhook_payload
+from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/whatsapp", tags=["WhatsApp"])
@@ -34,10 +36,10 @@ async def verify_webhook(
     hub_mode: str = Query(alias="hub.mode"),
     hub_verify_token: str = Query(alias="hub.verify_token"),
     hub_challenge: str = Query(alias="hub.challenge"),
-) -> int:
+) -> PlainTextResponse:
     if hub_mode == "subscribe" and hub_verify_token == settings.WHATSAPP_WEBHOOK_VERIFY_TOKEN:
         logger.info("WhatsApp webhook verified")
-        return int(hub_challenge)
+        return PlainTextResponse(content=hub_challenge)
     raise HTTPException(status_code=403, detail="Webhook verification failed.")
 
 
@@ -78,14 +80,18 @@ async def receive_webhook(
     return SuccessResponse(message="OK")
 
 
+class SendTextRequest(BaseModel):
+    to: str
+    body: str
+    preview_url: bool = False
+
 @router.post("/send-text")
 async def send_text_message(
-    to: str,
-    body: str,
+    data: SendTextRequest,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> SuccessResponse:
     from app.whatsapp.client import get_whatsapp_client
     client = get_whatsapp_client()
-    await client.send_text(to=to, body=body)
+    await client.send_text(to=data.to, body=data.body, preview_url=data.preview_url)
     return SuccessResponse(message="Message sent.")

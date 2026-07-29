@@ -219,6 +219,28 @@ class AppointmentRepository(BaseRepository[Appointment]):
         stmt = select(Appointment).where(Appointment.customer_id == customer_id)
         result = await self.session.execute(stmt)
         return result.scalars().all()
+    
+    async def filter_appointments(
+        self,
+        *,
+        assigned_to: uuid.UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        offset: int = 0,
+        limit: int = 20,
+    ) -> tuple[Sequence[Appointment], int]:
+        conditions = []
+        if assigned_to:
+            conditions.append(Appointment.assigned_to == assigned_to)
+        if start_date:
+            conditions.append(Appointment.start_time >= start_date)
+        if end_date:
+            conditions.append(Appointment.end_time <= end_date)
+        where_clause = and_(*conditions) if conditions else True
+        count = (await self.session.execute(select(func.count()).select_from(Appointment).where(where_clause))).scalar_one()
+        items = (await self.session.execute(select(Appointment).where(where_clause).offset(offset).limit(limit))).scalars().all()
+        return items, count
+        
 
 
 class TaskRepository(BaseRepository[Task]):

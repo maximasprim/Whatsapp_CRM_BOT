@@ -318,6 +318,19 @@ class AppointmentService:
         self.activity_repo = ActivityRepository(session)
         self.session = session
 
+    async def list(
+        self,
+        *,
+        assigned_to: uuid.UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        offset: int = 0,
+        limit: int = 20,
+    ) -> tuple[Sequence[Appointment], int]:
+        return await self.repo.filter_appointments(
+            assigned_to=assigned_to, start_date=start_date, end_date=end_date, offset=offset, limit=limit
+        )
+
     async def create(self, data: AppointmentCreate, created_by: uuid.UUID | None = None) -> Appointment:
         appt = await self.repo.create(**data.model_dump())
         await self.activity_repo.log(

@@ -57,3 +57,226 @@ Content-Type: application/json
 ###
 DELETE http://localhost:8000/api/users/40a382a3-9945-4fcf-8e20-8f7d804612c1
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMwODU4MDQsImV4cCI6MTc4MzA4NzYwNCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjA5ZTljODBjLTAzMTktNGRjZC04ZTExLTMyZTYwNThhY2Y2MyIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.hlEfyAvRY1Jb06XVXcLdBFCRMOFafNK7-RMcDjjy4KQ
+###
+POST http://localhost:8000/api/whatsapp/send-text
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODM1MTY5MzQsImV4cCI6MTc4MzUyMDUzNCwidHlwZSI6ImFjY2VzcyIsImp0aSI6Ijg2Y2ZkMTFjLTUxYTYtNDAzMC1iY2I4LWMzYzQ3ZmZiYzcwNSIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.yo_wkO0dJuJEJTF_3nBBZqN4qCHHsCnm5w96VTUBsSI
+Content-Type: application/json
+
+{
+  "to": "1 555-632-2584",
+  "body": "Hello"
+}
+###
+POST http://localhost:8000/api/ai/chat
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMxNTY2MDgsImV4cCI6MTc4MzE1ODQwOCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjlhNjMwZjJkLWRkZTctNGU1My1hMjRiLWFhMzMxODg2NmZjYiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.2ZahkVh45ty6sMcrpXu443_yLssmrhACH5zds3D0W1I
+
+{
+  "message": "what was the first question i asked you?"
+}
+//Conversation with AI
+###
+POST http://localhost:8000/api/ai/chat
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMxNTY2MDgsImV4cCI6MTc4MzE1ODQwOCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjlhNjMwZjJkLWRkZTctNGU1My1hMjRiLWFhMzMxODg2NmZjYiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.2ZahkVh45ty6sMcrpXu443_yLssmrhACH5zds3D0W1I
+Content-Type: application/json
+
+{
+  "message": "Who are you exactly and how can you help me?",
+  "history": [
+    {
+      "role": "user",
+      "content": "Hello, what can you help me with?"
+    },
+    {
+      "role": "assistant",
+      "content": "I can help you manage customers, leads and appointments."
+    },
+    {
+      "role": "user",
+      "content": "Who are you exactly and how can you help me?"
+    }
+  ]
+}
+
+###
+GET http://localhost:8000/api/users
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMTY5MDIsImV4cCI6MTc4MzMxODcwMiwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjViZTY4MDJmLWY5YjctNDRhYy1hM2YwLTQ2ZDIyNzRhODdkZiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.1qnJ1zenrC3tcGYXUGAVnGJ0SUpu7dIZliDcYExjhPw
+###
+GET http://localhost:8000/api/customers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMjAwMjksImV4cCI6MTc4MzMyMTgyOSwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjdkZDE4OTExLTA1Y2QtNDIyZC1iY2QzLWQ1OThkNDJiODAyOSIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.GnLOwqVZbTzAxJZRUOdnCiCHowSuVnxhe9ij5rE2Xks
+###
+POST http://localhost:8000/api/customers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMTY5MDIsImV4cCI6MTc4MzMxODcwMiwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjViZTY4MDJmLWY5YjctNDRhYy1hM2YwLTQ2ZDIyNzRhODdkZiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.1qnJ1zenrC3tcGYXUGAVnGJ0SUpu7dIZliDcYExjhPw
+Content-Type: application/json
+
+{
+  "first_name": "string",
+  "last_name": "string",
+  "phone": "string",
+  "email": "admin@bot.com",
+  "whatsapp_id": "string",
+  "gender": "unknown",
+  "country": "string",
+  "city": "string",
+  "address": "string",
+  "timezone": "string",
+  "language": "string",
+  "job_title": "string",
+  "industry": "string",
+  "company_id": "ecadd1bf-982e-4ac6-be2d-8bfe01731f97",
+  "assigned_to": "1b39c2fd-0bbb-4d23-aa23-a17a1eafa35f",
+  "source": "string",
+  "custom_fields": {}
+}
+###
+POST http://localhost:8000/api/companies
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMTY5MDIsImV4cCI6MTc4MzMxODcwMiwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjViZTY4MDJmLWY5YjctNDRhYy1hM2YwLTQ2ZDIyNzRhODdkZiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.1qnJ1zenrC3tcGYXUGAVnGJ0SUpu7dIZliDcYExjhPw
+Content-Type: application/json
+
+{
+  "name": "Bidii",
+  "domain": "string",
+  "industry": "string",
+  "size": "micro",
+  "employee_count": 0,
+  "phone": "string",
+  "email": "admin@bot.com",
+  "website": "string",
+  "country": "string",
+  "city": "string",
+  "description": "string"
+}
+
+###
+GET http://localhost:8000/api/companies
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMTY5MDIsImV4cCI6MTc4MzMxODcwMiwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjViZTY4MDJmLWY5YjctNDRhYy1hM2YwLTQ2ZDIyNzRhODdkZiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.1qnJ1zenrC3tcGYXUGAVnGJ0SUpu7dIZliDcYExjhPw
+###
+POST http://localhost:8000/api/leads
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMjMzMjcsImV4cCI6MTc4MzMyNTEyNywidHlwZSI6ImFjY2VzcyIsImp0aSI6IjEzMzc3YWVlLWUwZTItNGJiMy05MTA4LTcxMDgwMzZlZGE2ZiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.B4WKIj0c31HOLVv6ZGTMFfBtvwrOz4nKq_mNzRGyubA
+
+{
+  "title": "string",
+  "description": "string",
+  "customer_id": "bbcd9cb1-e385-47c9-bd19-17c8dbe9424d",
+  "assigned_to": "1b39c2fd-0bbb-4d23-aa23-a17a1eafa35f",
+  "stage_id": "c7834525-7490-424d-a19d-d1bc77958752",
+  "status": "new",
+  "priority": "medium",
+  "source": "whatsapp",
+  "estimated_value": 0,
+  "probability": 100,
+  "expected_close_date": "string",
+  "custom_fields": {}
+}
+//update lead
+###
+PUT http://localhost:8000/api/leads/8648e027-347b-4367-82b8-c79ae39dae44
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMjMzMjcsImV4cCI6MTc4MzMyNTEyNywidHlwZSI6ImFjY2VzcyIsImp0aSI6IjEzMzc3YWVlLWUwZTItNGJiMy05MTA4LTcxMDgwMzZlZGE2ZiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.B4WKIj0c31HOLVv6ZGTMFfBtvwrOz4nKq_mNzRGyubA
+Content-Type: application/json 
+
+{
+  "title": "Mwas",
+  "description": "Auto_Book Loan"
+}
+###
+GET http://localhost:8000/api/products
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMjYzMDcsImV4cCI6MTc4MzMyODEwNywidHlwZSI6ImFjY2VzcyIsImp0aSI6ImE1NDlhYTk4LTExNzItNGE3My05ZDE4LWU1NDEyOWMyZTdmOSIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.zMlJgaHVT7yP4tVpqGU2CBKYoaMXaYCZo1mZ8kplwsU
+###
+POST http://localhost:8000/api/products
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMjMzMjcsImV4cCI6MTc4MzMyNTEyNywidHlwZSI6ImFjY2VzcyIsImp0aSI6IjEzMzc3YWVlLWUwZTItNGJiMy05MTA4LTcxMDgwMzZlZGE2ZiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.B4WKIj0c31HOLVv6ZGTMFfBtvwrOz4nKq_mNzRGyubA
+Content-Type: application/json
+
+  {
+  "name": "string",
+  "sku": "string",
+  "description": "string",
+  "category": "string",
+  "unit": "string",
+  "price": 0,
+  "cost": 0,
+  "tax_rate": 0,
+  "discount": 0,
+  "stock_quantity": 0
+}
+###
+PUT http://localhost:8000/api/products/3fa85f64-5717-4562-b3fc-2c963f66afa6
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMjMzMjcsImV4cCI6MTc4MzMyNTEyNywidHlwZSI6ImFjY2VzcyIsImp0aSI6IjEzMzc3YWVlLWUwZTItNGJiMy05MTA4LTcxMDgwMzZlZGE2ZiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.B4WKIj0c31HOLVv6ZGTMFfBtvwrOz4nKq_mNzRGyubA
+Content-Type: application/json
+
+{
+  "name": "Hustle Yangu Loan"
+}
+###
+PUT http://localhost:8000/api/orders
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMjYzMDcsImV4cCI6MTc4MzMyODEwNywidHlwZSI6ImFjY2VzcyIsImp0aSI6ImE1NDlhYTk4LTExNzItNGE3My05ZDE4LWU1NDEyOWMyZTdmOSIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.zMlJgaHVT7yP4tVpqGU2CBKYoaMXaYCZo1mZ8kplwsU
+Content-Type: application/json
+
+{
+  "customer_id": "bbcd9cb1-e385-47c9-bd19-17c8dbe9424d",
+  "items": [
+    {
+      "product_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "quantity": 1,
+      "unit_price": 0,
+      "discount": 0
+    }
+  ],
+  "currency": "USD",
+  "shipping_amount": 0,
+  "discount_amount": 0,
+  "shipping_address": "string",
+  "billing_address": "string",
+  "notes": "string"
+}
+###
+GET http://localhost:8000/api/tickets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMzAxNTAsImV4cCI6MTc4MzMzMTk1MCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjJiYTY3NDI3LWJmMGYtNGNhMi1iMGM4LTNlZDc5Mjc0MjRlMiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.i5mgab8FnAPdFMOptA-N0UtC1ktunvTqGhusJo3xLPk
+###
+POST http://localhost:8000/api/tickets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMzAxNTAsImV4cCI6MTc4MzMzMTk1MCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjJiYTY3NDI3LWJmMGYtNGNhMi1iMGM4LTNlZDc5Mjc0MjRlMiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.i5mgab8FnAPdFMOptA-N0UtC1ktunvTqGhusJo3xLPk
+Content-Type: application/json
+
+{
+  "subject": "string",
+  "description": "string",
+  "customer_id": "bbcd9cb1-e385-47c9-bd19-17c8dbe9424d",
+  "priority": "medium",
+  "category": "string"
+}
+###
+GET http://localhost:8000/api/analytics/dashboard
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMzAxNTAsImV4cCI6MTc4MzMzMTk1MCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjJiYTY3NDI3LWJmMGYtNGNhMi1iMGM4LTNlZDc5Mjc0MjRlMiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.i5mgab8FnAPdFMOptA-N0UtC1ktunvTqGhusJo3xLPk
+###
+GET http://localhost:8000/api/analytics/leads/funnel
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODMzMzAxNTAsImV4cCI6MTc4MzMzMTk1MCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjJiYTY3NDI3LWJmMGYtNGNhMi1iMGM4LTNlZDc5Mjc0MjRlMiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.i5mgab8FnAPdFMOptA-N0UtC1ktunvTqGhusJo3xLPk
+###
+GET http://localhost:8000/api/analytics/customers/growth
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODM0MTUxMjIsImV4cCI6MTc4MzQxODcyMiwidHlwZSI6ImFjY2VzcyIsImp0aSI6Ijg3MDE3MTFlLTdkNTItNDBkYi04YjI3LTJlOThjZjU1N2YyMCIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.TYRgSajn3ZNhNfjjzreM86j8WPQt9l4WgVkSk3HZzf4
+###
+POST http://localhost:8000/api/whatsapp/send-text
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODM0MTUxMjIsImV4cCI6MTc4MzQxODcyMiwidHlwZSI6ImFjY2VzcyIsImp0aSI6Ijg3MDE3MTFlLTdkNTItNDBkYi04YjI3LTJlOThjZjU1N2YyMCIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.TYRgSajn3ZNhNfjjzreM86j8WPQt9l4WgVkSk3HZzf4
+Content-Type: application/json
+
+{
+  "to": "1 555-632-2584",
+  "body": "Hello"
+}
+###
+GET http://localhost:8000/api/calendar/status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODM0OTk3MTMsImV4cCI6MTc4MzUwMzMxMywidHlwZSI6ImFjY2VzcyIsImp0aSI6ImNkZjEzZTNlLTBlOTEtNDFhYy1iNzBlLTUzODk1YzIxOTI1MCIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.dnDFyWfmL-2WwQZatP7C34Jbjp06a7nQ4pV8T7DFy1Y
+###
+GET http://localhost:8000/api/appointments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODQ1MzgwODcsImV4cCI6MTc4NDU0MTY4NywidHlwZSI6ImFjY2VzcyIsImp0aSI6ImYwZGRhZTc0LWRhMDEtNGJkZi1iYjJiLWY0ODIyNTYxMGJjNSIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.3M0gY9d28I8a2Bp754p8AwnDR_50qVqoYJQ_XdNo4jg
+###
+GET http://localhost:8000/api/tasks
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODQ1NDgxOTcsImV4cCI6MTc4NDU1MTc5NywidHlwZSI6ImFjY2VzcyIsImp0aSI6IjRkODY2ZjU0LTMyNGEtNDE2YS1iNjQzLTUzMjg1NTljMzlkOCIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.ul8OUmTaWOrvYuSw_KkByLSgpRLYdZlhW-QngFxziVw
+###
+GET http://localhost:8000/api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=SaiDika_crm_bot&hub.challenge=testchallenge123
+###
+POST http://localhost:8000/api/whatsapp/send-text
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODUzMTIxMDgsImV4cCI6MTc4NTMxNTcwOCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjIyYmI1Yzk0LWY3MzQtNGIyMS05N2RjLTY0NTQ3MWYxYmFhYiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.ugd42U8_jC2xICZfxz_wJYhyYCOF_52e3vThNrh0C30
+Content-Type: application/json
+
+{
+  "to": "+254743493619",
+  "body": "Hello from Bidii!"
+}
