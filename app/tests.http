@@ -273,10 +273,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZ
 GET http://localhost:8000/api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=SaiDika_crm_bot&hub.challenge=testchallenge123
 ###
 POST http://localhost:8000/api/whatsapp/send-text
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODUzMTIxMDgsImV4cCI6MTc4NTMxNTcwOCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjIyYmI1Yzk0LWY3MzQtNGIyMS05N2RjLTY0NTQ3MWYxYmFhYiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.ugd42U8_jC2xICZfxz_wJYhyYCOF_52e3vThNrh0C30
-Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODU0MTE0ODksImV4cCI6MTc4NTQxNTA4OSwidHlwZSI6ImFjY2VzcyIsImp0aSI6ImUyY2QwM2JhLTg4MWYtNDVlOC1hYTA5LTI5ODg3Y2U0NDI3OCIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.x2fSNrNbgmgvfK_sP56bqyKa-fdJQRh_idFX9_03hXI
 
 {
-  "to": "+254743493619",
-  "body": "Hello from Bidii!"
+  "to": "254743493619",
+  "body": "Okay, I will send you a message to confirm your subscription. Please reply with 'YES' to confirm."
 }
