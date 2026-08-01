@@ -278,4 +278,45 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZ
 {
   "to": "254743493619",
   "body": "Okay, I will send you a message to confirm your subscription. Please reply with 'YES' to confirm."
+
+}
+
+###
+POST http://localhost:8000/api/whatsapp/webhook
+Content-Type: application/json
+
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "123456789",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "254700000000",
+              "phone_number_id": "123456789"
+            },
+            "contacts": [
+              {
+                "profile": { "name": "Test Customer" },
+                "wa_id": "254712345678"
+              }
+            ],
+            "messages": [
+              {
+                "from": "254712345678",
+                "id": "wamid.test001",
+                "timestamp": "1700000000",
+                "text": { "body": "Hello, what services do you offer?" },
+                "type": "text"
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
 }
