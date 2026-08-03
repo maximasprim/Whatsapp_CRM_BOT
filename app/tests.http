@@ -307,9 +307,9 @@ Content-Type: application/json
             "messages": [
               {
                 "from": "254743493619",
-                "id": "wamid.test018",
+                "id": "wamid.test021",
                 "timestamp": "1700000010",
-                "text": { "body": "Can i get your product catalogue" },
+                "text": { "body": "Hey" },
                 "type": "text"
               }
             ]
