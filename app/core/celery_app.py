@@ -5,6 +5,34 @@ from celery.schedules import crontab
 
 from app.core.config import settings
 
+# ── Register ALL models before any task runs ──────────────────────────────────
+# SQLAlchemy resolves foreign keys (e.g. customers.assigned_to → users.id)
+# lazily at first query time. All models must be imported here so they are
+# registered in SQLAlchemy's mapper registry before any Celery task
+# opens a database session. Without this, tasks fail with
+# NoReferencedTableError when SQLAlchemy cannot find a related table.
+import app.models.auth                  # noqa: F401
+import app.models.customer              # noqa: F401
+import app.models.company               # noqa: F401
+import app.models.lead                  # noqa: F401
+import app.models.product               # noqa: F401
+import app.models.order                 # noqa: F401
+import app.models.appointment           # noqa: F401
+import app.models.task                  # noqa: F401
+import app.models.followup              # noqa: F401
+import app.models.note                  # noqa: F401
+import app.models.campaign              # noqa: F401
+import app.models.ticket                # noqa: F401
+import app.models.tag                   # noqa: F401
+import app.models.activity              # noqa: F401
+import app.models.notification          # noqa: F401
+import app.models.conversation          # noqa: F401
+import app.models.conversation_summary  # noqa: F401
+import app.models.whatsapp_template     # noqa: F401
+import app.models.knowledge_document    # noqa: F401
+import app.models.calendar_credential  # noqa: F401
+# ─────────────────────────────────────────────────────────────────────────────
+
 celery_app = Celery(
     "whatsapp_crm",
     broker=settings.CELERY_BROKER_URL,

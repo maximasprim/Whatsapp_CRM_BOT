@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from typing import Any
 
@@ -29,27 +30,30 @@ Always respond in the customer's language. Be professional, friendly, and concis
 When extracting data, return valid JSON in the specified format.
 """
 
-ANALYSIS_PROMPT = """Analyze this customer message and return a JSON object with:
-{
+ANALYSIS_PROMPT = """Analyze this customer message and return ONLY a valid JSON object.
+No explanation, no markdown, no code blocks. Just the raw JSON starting with {{ and ending with }}.
+
+Return exactly this structure:
+{{
   "intent": "purchase|inquiry|complaint|support|booking|general",
   "sentiment": "positive|neutral|negative",
-  "sentiment_score": 0.0-1.0,
+  "sentiment_score": 0.0,
   "urgency": "low|medium|high|critical",
-  "language": "en|sw|fr|...",
-  "entities": {
-    "product_mentioned": "product name or null",
-    "budget": "budget range or null",
-    "timeline": "timeline or null",
-    "location": "location or null",
-    "contact_info": "phone/email or null"
-  },
-  "lead_score_delta": -10 to +20,
-  "should_escalate": true|false,
-  "escalation_reason": "reason or null",
-  "suggested_reply": "A helpful reply in the customer's language",
-  "action_items": ["list of follow-up actions"],
-  "crm_notes": "internal note for CRM"
-}
+  "language": "en",
+  "entities": {{
+    "product_mentioned": null,
+    "budget": null,
+    "timeline": null,
+    "location": null,
+    "contact_info": null
+  }},
+  "lead_score_delta": 0,
+  "should_escalate": false,
+  "escalation_reason": null,
+  "suggested_reply": "A helpful reply in the customer language",
+  "action_items": [],
+  "crm_notes": "internal note"
+}}
 
 Customer message: {message}
 Customer profile: {profile}
@@ -95,14 +99,64 @@ class AICRMEngine:
                 Message(role=MessageRole.USER, content=prompt),
             ],
             temperature=0.3,
-            response_format={"type": "json_object"},
         )
 
+        # Clean and parse the response
+        raw = response.content.strip()
+        raw = re.sub(r'```json\s*|\s*```', '', raw).strip()
+
         try:
-            analysis = json.loads(response.content)
+            analysis = json.loads(raw)
         except json.JSONDecodeError:
-            logger.warning("AI returned non-JSON analysis", content=response.content[:200])
-            analysis = {"intent": "general", "sentiment": "neutral", "suggested_reply": ""}
+            match = re.search(r'\{.*\}', raw, re.DOTALL)
+            if match:
+                try:
+                    analysis = json.loads(match.group())
+                except json.JSONDecodeError:
+                    logger.warning(
+                        "AI returned unparseable response",
+                        content=raw[:300],
+                    )
+                    analysis = {
+                        "intent": "general",
+                        "sentiment": "neutral",
+                        "sentiment_score": 0.5,
+                        "urgency": "low",
+                        "language": "en",
+                        "entities": {},
+                        "lead_score_delta": 0,
+                        "should_escalate": False,
+                        "escalation_reason": None,
+                        "suggested_reply": "",
+                        "action_items": [],
+                        "crm_notes": "",
+                    }
+            else:
+                logger.warning(
+                    "AI returned unparseable response",
+                    content=raw[:300],
+                )
+                analysis = {
+                    "intent": "general",
+                    "sentiment": "neutral",
+                    "sentiment_score": 0.5,
+                    "urgency": "low",
+                    "language": "en",
+                    "entities": {},
+                    "lead_score_delta": 0,
+                    "should_escalate": False,
+                    "escalation_reason": None,
+                    "suggested_reply": "",
+                    "action_items": [],
+                    "crm_notes": "",
+                }
+
+        logger.info(
+            "Message analyzed",
+            intent=analysis.get("intent"),
+            sentiment=analysis.get("sentiment"),
+            should_escalate=analysis.get("should_escalate"),
+        )
 
         return analysis
 
@@ -139,7 +193,11 @@ class AICRMEngine:
         if crm_notes:
             from app.schemas.crm import NoteCreate
             await self.note_service.create(
-                NoteCreate(customer_id=customer.id, title="AI Analysis", content=crm_notes),
+                NoteCreate(
+                    customer_id=customer.id,
+                    title="AI Analysis",
+                    content=crm_notes,
+                ),
                 created_by=None,
             )
 
@@ -150,7 +208,7 @@ class AICRMEngine:
                 TaskCreate(
                     title=action,
                     customer_id=customer.id,
-                    description=f"AI-generated from conversation analysis",
+                    description="AI-generated from conversation analysis",
                 )
             )
 
@@ -170,17 +228,24 @@ class AICRMEngine:
 
         return analysis
 
-    async def qualify_lead(self, customer: Customer, conversation_text: str) -> dict[str, Any]:
-        prompt = f"""Qualify this lead based on the conversation. Return JSON:
+    async def qualify_lead(
+        self,
+        customer: Customer,
+        conversation_text: str,
+    ) -> dict[str, Any]:
+        prompt = f"""Qualify this lead based on the conversation.
+Return ONLY a valid JSON object with no extra text, no markdown, no code blocks.
+
+Return exactly this structure:
 {{
-  "lead_score": 0-100,
+  "lead_score": 0,
   "buying_intent": "none|low|medium|high|very_high",
-  "budget_range": "budget or null",
-  "timeline": "timeline or null",
-  "is_decision_maker": true|false|null,
-  "purchase_probability": 0.0-1.0,
+  "budget_range": null,
+  "timeline": null,
+  "is_decision_maker": null,
+  "purchase_probability": 0.0,
   "urgency": "low|medium|high|critical",
-  "industry": "industry or null",
+  "industry": null,
   "business_size": "micro|small|medium|large|enterprise|null",
   "qualification_notes": "notes"
 }}
@@ -191,15 +256,28 @@ Conversation:
 """
         response = await self.provider.complete(
             messages=[
-                Message(role=MessageRole.SYSTEM, content="You are a lead qualification expert. Return only valid JSON."),
+                Message(
+                    role=MessageRole.SYSTEM,
+                    content="You are a lead qualification expert. Return only valid JSON with no extra text.",
+                ),
                 Message(role=MessageRole.USER, content=prompt),
             ],
             temperature=0.2,
-            response_format={"type": "json_object"},
         )
+
+        raw = response.content.strip()
+        raw = re.sub(r'```json\s*|\s*```', '', raw).strip()
+
         try:
-            return json.loads(response.content)
+            return json.loads(raw)
         except json.JSONDecodeError:
+            match = re.search(r'\{.*\}', raw, re.DOTALL)
+            if match:
+                try:
+                    return json.loads(match.group())
+                except json.JSONDecodeError:
+                    pass
+            logger.warning("Could not parse lead qualification response", content=raw[:300])
             return {}
 
     async def generate_suggested_reply(
@@ -221,6 +299,7 @@ Conversation:
 {history_text}
 
 Reply should be concise (max 3 sentences), warm, and actionable.
+Return only the reply text, no extra explanation.
 """
         response = await self.provider.complete(
             messages=[
@@ -231,7 +310,11 @@ Reply should be concise (max 3 sentences), warm, and actionable.
         )
         return response.content.strip()
 
-    async def summarize_conversation(self, messages: list[ConversationMessage], customer: Customer) -> str:
+    async def summarize_conversation(
+        self,
+        messages: list[ConversationMessage],
+        customer: Customer,
+    ) -> str:
         if not messages:
             return ""
         conversation_text = "\n".join([

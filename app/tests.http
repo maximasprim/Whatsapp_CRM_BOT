@@ -21,7 +21,7 @@ Content-Type: application/json
 
 {
   "email": "admin@bot.com",
-  "password": "12345678Mm"
+  "password": "Bidii@Kenya"
 }
 ###
 PUT http://localhost:8000/api/auth/me
@@ -289,27 +289,27 @@ Content-Type: application/json
   "object": "whatsapp_business_account",
   "entry": [
     {
-      "id": "123456789",
+      "id": "1434103261812254",
       "changes": [
         {
           "value": {
             "messaging_product": "whatsapp",
             "metadata": {
-              "display_phone_number": "254700000000",
-              "phone_number_id": "123456789"
+              "display_phone_number": "15556325584",
+              "phone_number_id": "1207456025781604"
             },
             "contacts": [
               {
                 "profile": { "name": "Test Customer" },
-                "wa_id": "254712345678"
+                "wa_id": "254743493619"
               }
             ],
             "messages": [
               {
-                "from": "254712345678",
-                "id": "wamid.test001",
-                "timestamp": "1700000000",
-                "text": { "body": "Hello, what services do you offer?" },
+                "from": "254743493619",
+                "id": "wamid.test018",
+                "timestamp": "1700000010",
+                "text": { "body": "Can i get your product catalogue" },
                 "type": "text"
               }
             ]
@@ -320,3 +320,11 @@ Content-Type: application/json
     }
   ]
 }
+###
+GET https://saidika-crm.onrender.com/api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=SaiDika_crm_bot&hub.challenge=testchallenge123
+###
+GET https://saidika-crm.onrender.com/api/conversations
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODU3Mzg2MTEsImV4cCI6MTc4NTc0MjIxMSwidHlwZSI6ImFjY2VzcyIsImp0aSI6ImMxYWEwMWY2LWUxYzctNGJjNy1iZjNmLTU4ZWRhMTU0ODk3YyIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.dlHopLBEXEhPWXw_wlPoLcysc9YBOAt0Y4Qji6Wtvfs
+###
+PUT http://saidika-crm.onrender.com/api/conversations/72fb207a-af4e-45f6-ab6d-7074ade54e27/toggle-bot
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODU2OTI4NjgsImV4cCI6MTc4NTY5NjQ2OCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjUwNDk2ZjQ2LTM0NjItNDA3MC04MGQ1LWVmZDk1MDViY2FiNyIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.6thY7ukd9jKcGO7VR-llFRw83g39anPLMVY1Oac-eKE
