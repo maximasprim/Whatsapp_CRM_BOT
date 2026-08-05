@@ -2,7 +2,7 @@
 GET http://localhost:8000/health
 //Register query
 ###
-POST http://localhost:8000/api/v1/auth/register
+POST http://localhost:8000/api/auth/register
 Content-Type: application/json
 
 {
@@ -347,9 +347,9 @@ Content-Type: application/json
             "messages": [
               {
                 "from": "254743493619",
-                "id": "wamid.test049",
+                "id": "wamid.test055",
                 "timestamp": "1700000011",
-                "text": { "body": "Growth?" },
+                "text": { "body": "Heyy?" },
                 "type": "text"
               }
             ]
