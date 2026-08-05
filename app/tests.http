@@ -307,9 +307,49 @@ Content-Type: application/json
             "messages": [
               {
                 "from": "254743493619",
-                "id": "wamid.test021",
+                "id": "wamid.test045",
                 "timestamp": "1700000010",
-                "text": { "body": "Hey" },
+                "text": { "body": "Hello chat?" },
+                "type": "text"
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}
+
+###
+POST http://saidika-crm.onrender.com/api/whatsapp/webhook
+Content-Type: application/json
+
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "1434103261812254",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "15556325584",
+              "phone_number_id": "1207456025781604"
+            },
+            "contacts": [
+              {
+                "profile": { "name": "Test Customer" },
+                "wa_id": "254743493619"
+              }
+            ],
+            "messages": [
+              {
+                "from": "254743493619",
+                "id": "wamid.test049",
+                "timestamp": "1700000011",
+                "text": { "body": "Growth?" },
                 "type": "text"
               }
             ]
@@ -324,7 +364,9 @@ Content-Type: application/json
 GET https://saidika-crm.onrender.com/api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=SaiDika_crm_bot&hub.challenge=testchallenge123
 ###
 GET https://saidika-crm.onrender.com/api/conversations
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODU3Mzg2MTEsImV4cCI6MTc4NTc0MjIxMSwidHlwZSI6ImFjY2VzcyIsImp0aSI6ImMxYWEwMWY2LWUxYzctNGJjNy1iZjNmLTU4ZWRhMTU0ODk3YyIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.dlHopLBEXEhPWXw_wlPoLcysc9YBOAt0Y4Qji6Wtvfs
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODU3NTAyMDgsImV4cCI6MTc4NTc1MzgwOCwidHlwZSI6ImFjY2VzcyIsImp0aSI6ImIxNzFjNjJhLTVjODMtNGNjZS1hZTc4LTRjZWNhNzM5YmFlZiIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.MKF42buUKs3RT7bL-NwfGBfw-g12YiuiagvXypnlIvU
 ###
 PUT http://saidika-crm.onrender.com/api/conversations/72fb207a-af4e-45f6-ab6d-7074ade54e27/toggle-bot
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODU2OTI4NjgsImV4cCI6MTc4NTY5NjQ2OCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjUwNDk2ZjQ2LTM0NjItNDA3MC04MGQ1LWVmZDk1MDViY2FiNyIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.6thY7ukd9jKcGO7VR-llFRw83g39anPLMVY1Oac-eKE
+###
+GET http://saidika-crm.onrender.com/health

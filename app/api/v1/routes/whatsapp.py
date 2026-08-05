@@ -51,25 +51,73 @@ async def receive_webhook(
 ) -> SuccessResponse:
     body = await request.body()
 
+    # ── Debug logging ─────────────────────────────────────────────────────
+    logger.info(
+        "Webhook POST received",
+        content_length=len(body),
+        signature_present=bool(x_hub_signature_256),
+        user_agent=request.headers.get("user-agent", "unknown"),
+        content_type=request.headers.get("content-type", "unknown"),
+    )
+    # ─────────────────────────────────────────────────────────────────────
+
     if settings.WHATSAPP_APP_SECRET and not _verify_signature(body, x_hub_signature_256):
+        logger.error(
+            "Webhook signature verification failed",
+            signature=x_hub_signature_256[:20] if x_hub_signature_256 else "none",
+        )
         raise HTTPException(status_code=401, detail="Invalid webhook signature.")
 
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception as e:
+        logger.error("Failed to parse webhook JSON", error=str(e), body=body[:200].decode())
+        raise HTTPException(status_code=400, detail="Invalid JSON payload.")
+
+    # ── Debug — log the full payload ──────────────────────────────────────
+    logger.info(
+        "Webhook payload received",
+        object_type=payload.get("object"),
+        entry_count=len(payload.get("entry", [])),
+        payload_preview=str(payload)[:500],
+    )
+    # ─────────────────────────────────────────────────────────────────────
+
     messages, statuses = parse_webhook_payload(payload)
+
+    logger.info(
+        "Webhook parsed",
+        message_count=len(messages),
+        status_count=len(statuses),
+    )
 
     service = WhatsAppConversationService(session)
 
     for parsed_msg in messages:
         try:
+            logger.info(
+                "Processing inbound message",
+                from_number=parsed_msg.from_number,
+                message_id=parsed_msg.message_id,
+                message_type=parsed_msg.message_type,
+                content=parsed_msg.text[:100] if parsed_msg.text else None,
+            )
             msg = await service.handle_inbound_message(parsed_msg)
-            # Trigger AI processing in background
+            logger.info("Message saved to DB", db_message_id=str(msg.id))
+
             from app.core.celery_app import celery_app
             celery_app.send_task(
                 "app.scheduler.tasks.summary_tasks.process_inbound_message",
                 args=[str(msg.id)],
             )
+            logger.info("Celery task queued", db_message_id=str(msg.id))
+
         except Exception as exc:
-            logger.error("Error handling inbound message", error=str(exc), message_id=parsed_msg.message_id)
+            logger.error(
+                "Error handling inbound message",
+                error=str(exc),
+                message_id=parsed_msg.message_id,
+            )
 
     for status in statuses:
         try:
@@ -78,7 +126,6 @@ async def receive_webhook(
             logger.error("Error handling status update", error=str(exc))
 
     return SuccessResponse(message="OK")
-
 
 class SendTextRequest(BaseModel):
     to: str
