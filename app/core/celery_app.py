@@ -63,12 +63,12 @@ celery_app.conf.update(
     broker_connection_retry_on_startup=True,
      broker_transport_options={
         "visibility_timeout": 3600,
-        "socket_keepalive": True,
-        "socket_keepalive_options": {
-            "TCP_KEEPIDLE": 60,
-            "TCP_KEEPINTVL": 10,
-            "TCP_KEEPCNT": 5,
-        },
+        # "socket_keepalive": True,
+        # "socket_keepalive_options": {
+        #     "TCP_KEEPIDLE": 60,
+        #     "TCP_KEEPINTVL": 10,
+        #     "TCP_KEEPCNT": 5,
+        # },
         "retry_on_timeout": True,
     },
     redis_socket_keepalive=True,

@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
     FRONTEND_URL: str = "http://localhost:3000"
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "https://saidika-crm.onrender.com"]
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "https://saidika-crm.onrender.com", "http://localhost:5173", "http://localhost:8000"]
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
@@ -80,6 +80,9 @@ class Settings(BaseSettings):
     WHATSAPP_ACCESS_TOKEN: str = ""
     WHATSAPP_WEBHOOK_VERIFY_TOKEN: str = ""
     WHATSAPP_APP_SECRET: str = ""
+
+    WHATSAPP_WEBSITE_LEAD_TEMPLATE_NAME: str = ""
+    WHATSAPP_WEBSITE_LEAD_TEMPLATE_LANGUAGE: str = "en"
 
     @property
     def WHATSAPP_API_BASE_URL(self) -> str:

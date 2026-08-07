@@ -16,6 +16,7 @@ from app.schemas.public import PublicLeadRequest, PublicLeadResponse
 from app.services.crm import CustomerService, LeadService
 from app.services.lead_notifications import notify_agents_of_new_lead
 from app.whatsapp.conversation_service import WhatsAppConversationService
+from app.core.config import settings
 
 logger = get_logger(__name__)
 

@@ -97,7 +97,11 @@ async def _summarize_conversations() -> dict:
 
         for conv in conversations:
             try:
-                existing = await session.get(ConversationSummary, conv.id)
+                # existing = await session.get(ConversationSummary, conv.id)
+                existing = await session.scalar(
+                    select(ConversationSummary).where(ConversationSummary.conversation_id == conv.id)
+                )
+                
                 if existing:
                     continue
                 msg_stmt = select(ConversationMessage).where(
