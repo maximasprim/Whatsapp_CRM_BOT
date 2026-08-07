@@ -18,6 +18,8 @@ from app.core.middleware import (
     SecurityHeadersMiddleware,
     register_exception_handlers,
 )
+from app.core.rate_limit import limiter
+
 
 # Configure structured logging
 setup_logging()
@@ -54,7 +56,7 @@ def create_app() -> FastAPI:
     )
 
     # ── Rate Limiter ──────────────────────────────────────────────────────────
-    limiter = Limiter(key_func=get_remote_address)
+    # limiter = Limiter(key_func=get_remote_address)
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -102,6 +104,7 @@ def _register_routers(app: FastAPI) -> None:
     from app.api.v1.routes.conversations import router as conversations_router
     from app.api.v1.routes.rag import router as rag_router
     from app.api.v1.routes.calendar import router as calendar_router
+    from app.api.v1.routes.public import router as public_router
 
     prefix = "/api"
     app.include_router(auth_router, prefix=prefix)
@@ -125,6 +128,7 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(conversations_router, prefix=prefix)
     app.include_router(rag_router, prefix=prefix)
     app.include_router(calendar_router, prefix=prefix)
+    app.include_router(public_router, prefix=prefix)
 
     @app.get("/health", tags=["Health"])
     async def health_check() -> dict:

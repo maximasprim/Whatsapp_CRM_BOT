@@ -370,3 +370,16 @@ PUT http://saidika-crm.onrender.com/api/conversations/72fb207a-af4e-45f6-ab6d-70
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYjM5YzJmZC0wYmJiLTRkMjMtYWEyMy1hMTdhMWVhZmEzNWYiLCJpYXQiOjE3ODU2OTI4NjgsImV4cCI6MTc4NTY5NjQ2OCwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjUwNDk2ZjQ2LTM0NjItNDA3MC04MGQ1LWVmZDk1MDViY2FiNyIsImVtYWlsIjoiYWRtaW5AYm90LmNvbSIsImlzX3N1cGVydXNlciI6dHJ1ZX0.6thY7ukd9jKcGO7VR-llFRw83g39anPLMVY1Oac-eKE
 ###
 GET http://saidika-crm.onrender.com/health
+###
+POST http://localhost:8000/api/public/leads
+Content-Type: application/json
+
+{
+  "full_name": "Jane Wanjiru",
+  "phone": "0712345678",
+  "email": "jane@example.com",
+  "source_page": "calculator",
+  "trigger": "calculator_interaction",
+  "product_interest": "Boda Boda Loan",
+  "message": "Testing the public lead endpoint"
+}

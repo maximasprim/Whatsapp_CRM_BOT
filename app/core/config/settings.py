@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # ── AI ───────────────────────────────────────────────────────────────────
-    AI_PROVIDER: Literal["openai", "gemini"] = "openai"
+    AI_PROVIDER: Literal["openai", "gemini"] = "gemini"
     AI_MAX_TOKENS: int = 4096
     AI_TEMPERATURE: float = 0.7
     AI_MAX_RETRIES: int = 3

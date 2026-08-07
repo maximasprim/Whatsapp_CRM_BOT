@@ -1,0 +1,105 @@
+# from __future__ import annotations
+
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database.base import get_db
+from app.core.exceptions import ConflictException
+from app.core.logging import get_logger
+from app.core.rate_limit import limiter
+from app.models.lead import LeadPriority, LeadSource, LeadStatus
+from app.repositories.crm import CustomerRepository
+from app.schemas.crm import CustomerCreate, LeadCreate
+from app.schemas.public import PublicLeadRequest, PublicLeadResponse
+from app.services.crm import CustomerService, LeadService
+
+logger = get_logger(__name__)
+
+router = APIRouter(prefix="/public", tags=["Public"])
+
+# Human-readable label for the lead title, keyed by the site's source_page
+# value. Falls back to the raw value if the site sends a page we don't
+# recognize yet, so adding a new page on the website never breaks this.
+_SOURCE_LABELS = {
+    "calculator": "Loan Calculator",
+    "contact": "Contact Form",
+    "apply": "Loan Application",
+}
+
+
+@router.post("/leads", response_model=PublicLeadResponse, status_code=201)
+@limiter.limit("5/hour")
+async def create_public_lead(
+    request: Request,
+    data: PublicLeadRequest,
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> PublicLeadResponse:
+    """
+    Unauthenticated ingestion point for the marketing website. Deliberately
+    forgiving: a real visitor should never see an error here just because
+    they already exist as a customer, so an existing phone number is
+    treated as a hand-off to lead creation rather than a conflict.
+    """
+    if data.hp:
+        # Honeypot tripped - silently pretend success so the bot moves on.
+        return PublicLeadResponse(success=True)
+
+    customer_repo = CustomerRepository(session)
+    customer_service = CustomerService(session)
+    lead_service = LeadService(session)
+
+    first, *rest = data.full_name.strip().split(" ", 1)
+    last = rest[0] if rest else ""
+
+    existing = await customer_repo.get_by_phone(data.phone)
+    if existing:
+        customer = existing
+    else:
+        try:
+            customer = await customer_service.create(
+                CustomerCreate(
+                    first_name=first,
+                    last_name=last,
+                    phone=data.phone,
+                    email=data.email,
+                    source="website",
+                )
+            )
+        except ConflictException:
+            # Lost a race with another request for the same phone number.
+            customer = await customer_repo.get_by_phone(data.phone)
+            if customer is None:
+                raise
+
+    source_label = _SOURCE_LABELS.get(data.source_page, data.source_page)
+    title = f"Website lead - {source_label}"
+    if data.product_interest:
+        title += f" ({data.product_interest})"
+
+    description_parts = [f"Trigger: {data.trigger}"]
+    if data.message:
+        description_parts.append(data.message)
+    description = "\n\n".join(description_parts)
+
+    lead = await lead_service.create(
+        LeadCreate(
+            title=title,
+            description=description,
+            customer_id=customer.id,
+            status=LeadStatus.NEW,
+            priority=LeadPriority.MEDIUM,
+            source=LeadSource.WEBSITE,
+        )
+    )
+
+    logger.info(
+        "public_lead_created",
+        customer_id=str(customer.id),
+        lead_id=str(lead.id),
+        source_page=data.source_page,
+        trigger=data.trigger,
+    )
+
+    return PublicLeadResponse(success=True, customer_id=customer.id, lead_id=lead.id)
