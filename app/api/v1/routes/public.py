@@ -14,6 +14,8 @@ from app.repositories.crm import CustomerRepository
 from app.schemas.crm import CustomerCreate, LeadCreate
 from app.schemas.public import PublicLeadRequest, PublicLeadResponse
 from app.services.crm import CustomerService, LeadService
+from app.services.lead_notifications import notify_agents_of_new_lead
+from app.whatsapp.conversation_service import WhatsAppConversationService
 
 logger = get_logger(__name__)
 
@@ -101,5 +103,41 @@ async def create_public_lead(
         source_page=data.source_page,
         trigger=data.trigger,
     )
+
+    try:
+        await notify_agents_of_new_lead(
+            session,
+            lead_id=lead.id,
+            lead_title=title,
+            customer_name=data.full_name,
+            customer_phone=customer.phone,
+        )
+    except Exception:
+        # Same principle as the WhatsApp send below - never fail lead
+        # creation because a downstream notification step failed.
+        logger.exception("lead_agent_notification_failed", lead_id=str(lead.id))
+
+    if settings.WHATSAPP_WEBSITE_LEAD_TEMPLATE_NAME:
+        try:
+            wa_service = WhatsAppConversationService(session)
+            await wa_service.initiate_conversation(
+                customer_id=customer.id,
+                phone=customer.phone,
+                template_name=settings.WHATSAPP_WEBSITE_LEAD_TEMPLATE_NAME,
+                template_language=settings.WHATSAPP_WEBSITE_LEAD_TEMPLATE_LANGUAGE,
+                template_components=[
+                    {"type": "body", "parameters": [{"type": "text", "text": first or "there"}]}
+                ],
+                source_note=f"Auto-started from website lead ({source_label}).",
+            )
+        except Exception:
+            # A WhatsApp/template failure should never fail lead creation -
+            # the lead already exists in the CRM either way, an agent can
+            # always reach out manually.
+            logger.exception(
+                "whatsapp_conversation_initiate_failed",
+                customer_id=str(customer.id),
+                lead_id=str(lead.id),
+            )
 
     return PublicLeadResponse(success=True, customer_id=customer.id, lead_id=lead.id)
