@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
     FRONTEND_URL: str = "http://localhost:3000"
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "https://saidika-crm.onrender.com", "http://localhost:5173", "http://localhost:8000"]
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "https://saidika-crm.onrender.com", "http://localhost:5173", "http://localhost:8000", "https://bidii-credit-ltd.vercel.app"]
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
