@@ -86,8 +86,9 @@ async def extract_text_from_file(file: UploadFile) -> str:
 
 
 class KnowledgeBaseProcessor:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
         self.session = session
+        self.tenant_id = tenant_id
         self.provider = get_ai_provider()
 
     async def process_upload(self, file: UploadFile, uploaded_by: uuid.UUID | None = None) -> KnowledgeDocument:
@@ -95,6 +96,7 @@ class KnowledgeBaseProcessor:
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "txt"
 
         doc = KnowledgeDocument(
+            tenant_id=self.tenant_id,
             title=filename,
             file_name=filename,
             doc_type=ext,
@@ -119,6 +121,7 @@ class KnowledgeBaseProcessor:
 
     async def process_url(self, url: str, title: str = "", uploaded_by: uuid.UUID | None = None) -> KnowledgeDocument:
         doc = KnowledgeDocument(
+            tenant_id=self.tenant_id,
             title=title or url,
             source_url=url,
             doc_type="url",
@@ -155,6 +158,7 @@ class KnowledgeBaseProcessor:
         for i, chunk_content in enumerate(chunks):
             embedding = await self.provider.embed_single(chunk_content)
             chunk = DocumentChunk(
+                tenant_id=self.tenant_id,
                 document_id=doc.id,
                 chunk_index=i,
                 content=chunk_content,

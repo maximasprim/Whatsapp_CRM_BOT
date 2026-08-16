@@ -20,8 +20,8 @@ POST http://localhost:8000/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@bot.com",
-  "password": "Bidii@Kenya"
+  "email": "mathew@gmail.com",
+  "password": "@0743493619Mm"
 }
 ###
 PUT http://localhost:8000/api/auth/me

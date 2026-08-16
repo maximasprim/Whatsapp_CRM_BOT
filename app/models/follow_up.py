@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 
 class FollowUpStatus(str, enum.Enum):
@@ -26,7 +27,7 @@ class FollowUpType(str, enum.Enum):
     TASK = "task"
 
 
-class FollowUp(BaseModel):
+class FollowUp(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "follow_ups"
 
     customer_id: Mapped[uuid.UUID] = mapped_column(

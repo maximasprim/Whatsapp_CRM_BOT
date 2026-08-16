@@ -3,14 +3,17 @@ from __future__ import annotations
 import uuid
 
 from sqlalchemy import ForeignKey, Integer, Text
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+# from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from app.core.database.types import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 
-class ConversationSummary(BaseModel):
+class ConversationSummary(TenantMixin, BaseModel):
     __tablename__ = "conversation_summaries"
 
     conversation_id: Mapped[uuid.UUID] = mapped_column(

@@ -5,7 +5,7 @@ import hashlib
 import hmac
 import secrets
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
 
 from cryptography.fernet import Fernet
@@ -32,15 +32,41 @@ def generate_random_password(length: int = 16) -> str:
 
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
+# def create_access_token(
+#     subject: str | uuid.UUID,
+#     extra_claims: dict[str, Any] | None = None,
+#     expires_delta: timedelta | None = None,
+# ) -> str:
+#     expire = datetime.now(UTC) + (
+#         expires_delta
+#         or timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+#     )
+#     payload: dict[str, Any] = {
+#         "sub": str(subject),
+#         "iat": datetime.now(UTC),
+#         "exp": expire,
+#         "type": "access",
+#         "jti": str(uuid.uuid4()),
+#     }
+#     if extra_claims:
+#         payload.update(extra_claims)
+#     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 def create_access_token(
     subject: str | uuid.UUID,
     extra_claims: dict[str, Any] | None = None,
     expires_delta: timedelta | None = None,
+    tenant_id: str | None = None,
 ) -> str:
+    """Create a JWT access token.
+
+    Supports additional claims while preserving the existing token
+    structure and tenant_id support.
+    """
     expire = datetime.now(UTC) + (
         expires_delta
         or timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
     )
+
     payload: dict[str, Any] = {
         "sub": str(subject),
         "iat": datetime.now(UTC),
@@ -48,9 +74,38 @@ def create_access_token(
         "type": "access",
         "jti": str(uuid.uuid4()),
     }
+
+    # Add caller-supplied claims such as email and is_superuser.
     if extra_claims:
         payload.update(extra_claims)
-    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+    # Preserve tenant_id support.
+    if tenant_id:
+        payload["tenant_id"] = tenant_id
+
+    return jwt.encode(
+        payload,
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+
+
+# def decode_token(token: str) -> dict:
+#     """Decode and verify a JWT token. Returns the payload dict."""
+#     return jwt.decode(
+#         token,
+#         settings.JWT_SECRET_KEY,
+#         algorithms=[settings.JWT_ALGORITHM],
+#     )
+
+
+def get_tenant_id_from_token(token: str) -> str | None:
+    """Extract tenant_id from a JWT token without full validation."""
+    try:
+        payload = decode_token(token)
+        return payload.get("tenant_id")
+    except Exception:
+        return None
 
 
 def create_refresh_token(subject: str | uuid.UUID) -> str:
@@ -78,7 +133,7 @@ def decode_token(token: str, expected_type: str = "access") -> dict[str, Any]:
         if "expired" in error_message:
             raise ExpiredTokenException() from exc
         raise InvalidTokenException() from exc
-
+#ending of new code
 
 def create_verification_token(data: dict[str, Any], expires_hours: int = 24) -> str:
     expire = datetime.now(UTC) + timedelta(hours=expires_hours)

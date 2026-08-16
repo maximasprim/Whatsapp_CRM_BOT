@@ -5,10 +5,13 @@ import enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum as SAEnum, ForeignKey, Index, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+# from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
+from app.core.database.types import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 if TYPE_CHECKING:
     from app.models.customer import Customer
@@ -33,7 +36,7 @@ class ActivityType(str, enum.Enum):
     OTHER = "other"
 
 
-class Activity(BaseModel):
+class Activity(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "activities"
 
     customer_id: Mapped[uuid.UUID] = mapped_column(

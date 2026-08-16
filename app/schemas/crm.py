@@ -16,7 +16,7 @@ from app.models.activity import ActivityType
 from app.models.notification import NotificationType
 from app.models.order import OrderStatus, PaymentStatus
 from app.models.company import CompanySize
-from app.models.followup import FollowUpStatus, FollowUpType
+from app.models.follow_up import FollowUpStatus, FollowUpType
 
 
 # ── Customer ──────────────────────────────────────────────────────────────────

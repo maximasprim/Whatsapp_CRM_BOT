@@ -8,12 +8,13 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 if TYPE_CHECKING:
     from app.models.customer import Customer
 
 
-class Note(BaseModel):
+class Note(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "notes"
 
     customer_id: Mapped[uuid.UUID] = mapped_column(

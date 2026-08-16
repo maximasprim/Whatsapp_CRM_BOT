@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 
 class AppointmentStatus(str, enum.Enum):
@@ -31,7 +32,7 @@ class AppointmentType(str, enum.Enum):
     OTHER = "other"
 
 
-class Appointment(BaseModel):
+class Appointment(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "appointments"
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)

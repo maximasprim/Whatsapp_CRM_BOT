@@ -10,11 +10,13 @@ from app.core.exceptions import ConflictException
 from app.core.logging import get_logger
 from app.core.rate_limit import limiter
 from app.models.lead import LeadPriority, LeadSource, LeadStatus
+from app.models.tenant import Tenant
 from app.repositories.crm import CustomerRepository
 from app.schemas.crm import CustomerCreate, LeadCreate
 from app.schemas.public import PublicLeadRequest, PublicLeadResponse
 from app.services.crm import CustomerService, LeadService
 from app.services.lead_notifications import notify_agents_of_new_lead
+from app.tenant.middleware import get_current_tenant
 from app.whatsapp.conversation_service import WhatsAppConversationService
 from app.core.config import settings
 
@@ -38,20 +40,25 @@ async def create_public_lead(
     request: Request,
     data: PublicLeadRequest,
     session: Annotated[AsyncSession, Depends(get_db)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant)],
 ) -> PublicLeadResponse:
     """
     Unauthenticated ingestion point for the marketing website. Deliberately
     forgiving: a real visitor should never see an error here just because
     they already exist as a customer, so an existing phone number is
     treated as a hand-off to lead creation rather than a conflict.
+
+    Tenant is resolved from the request itself (X-Tenant-Slug header,
+    subdomain, or custom domain) since this endpoint is unauthenticated —
+    each tenant's marketing site posts leads to its own tenant this way.
     """
     if data.hp:
         # Honeypot tripped - silently pretend success so the bot moves on.
         return PublicLeadResponse(success=True)
 
-    customer_repo = CustomerRepository(session)
-    customer_service = CustomerService(session)
-    lead_service = LeadService(session)
+    customer_repo = CustomerRepository(session, tenant_id=current_tenant.id)
+    customer_service = CustomerService(session, tenant_id=current_tenant.id)
+    lead_service = LeadService(session, tenant_id=current_tenant.id)
 
     first, *rest = data.full_name.strip().split(" ", 1)
     last = rest[0] if rest else ""
@@ -108,6 +115,7 @@ async def create_public_lead(
     try:
         await notify_agents_of_new_lead(
             session,
+            tenant_id=current_tenant.id,
             lead_id=lead.id,
             lead_title=title,
             customer_name=data.full_name,
@@ -120,7 +128,7 @@ async def create_public_lead(
 
     if settings.WHATSAPP_WEBSITE_LEAD_TEMPLATE_NAME:
         try:
-            wa_service = WhatsAppConversationService(session)
+            wa_service = WhatsAppConversationService(session, tenant=current_tenant)
             await wa_service.initiate_conversation(
                 customer_id=customer.id,
                 phone=customer.phone,

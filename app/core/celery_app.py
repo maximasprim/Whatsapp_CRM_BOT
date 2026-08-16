@@ -19,7 +19,7 @@ import app.models.product               # noqa: F401
 import app.models.order                 # noqa: F401
 import app.models.appointment           # noqa: F401
 import app.models.task                  # noqa: F401
-import app.models.followup              # noqa: F401
+import app.models.follow_up              # noqa: F401
 import app.models.note                  # noqa: F401
 import app.models.campaign              # noqa: F401
 import app.models.ticket                # noqa: F401
@@ -31,6 +31,8 @@ import app.models.conversation_summary  # noqa: F401
 import app.models.whatsapp_template     # noqa: F401
 import app.models.knowledge_document    # noqa: F401
 import app.models.calendar_credential  # noqa: F401
+import app.models.tenant                # noqa: F401
+import app.models.billing               # noqa: F401
 # ─────────────────────────────────────────────────────────────────────────────
 
 celery_app = Celery(

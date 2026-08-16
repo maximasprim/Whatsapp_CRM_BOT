@@ -1,18 +1,54 @@
 from __future__ import annotations
+
 from typing import Any
+
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
+
 from app.core.config import settings
 from app.core.exceptions import WhatsAppException
 from app.core.logging import get_logger
+from app.models.tenant import Tenant
 
 logger = get_logger(__name__)
 
+WHATSAPP_API_URL = f"{settings.WHATSAPP_API_BASE_URL}"
+
+
 class WhatsAppClient:
-    def __init__(self) -> None:
-        self._base_url = f"{settings.WHATSAPP_API_BASE_URL}/{settings.WHATSAPP_PHONE_NUMBER_ID}"
-        self._headers = {
-            "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
+    """
+    Tenant-aware WhatsApp Business API client.
+
+    Each tenant can have its own WhatsApp phone number / access token
+    (see Tenant.whatsapp_*). If a tenant doesn't have credentials of its
+    own yet, falls back to the platform-wide settings.
+    """
+
+    def __init__(
+        self,
+        phone_number_id: str | None = None,
+        access_token: str | None = None,
+    ) -> None:
+        self.phone_number_id = phone_number_id or settings.WHATSAPP_PHONE_NUMBER_ID
+        self.access_token = access_token or settings.WHATSAPP_ACCESS_TOKEN
+        self._base_url = f"{WHATSAPP_API_URL}/{self.phone_number_id}"
+
+    @classmethod
+    def from_tenant(cls, tenant: Tenant) -> "WhatsAppClient":
+        """Create a client using a tenant's own credentials."""
+        return cls(
+            phone_number_id=(
+                tenant.whatsapp_phone_number_id or settings.WHATSAPP_PHONE_NUMBER_ID
+            ),
+            access_token=(
+                tenant.whatsapp_access_token or settings.WHATSAPP_ACCESS_TOKEN
+            ),
+        )
+
+    @property
+    def _headers(self) -> dict:
+        return {
+            "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
         }
 
@@ -21,6 +57,12 @@ class WhatsAppClient:
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(f"{self._base_url}/{endpoint}", headers=self._headers, json=payload)
             if resp.status_code not in (200, 201):
+                logger.error(
+                    "WhatsApp API error",
+                    status_code=resp.status_code,
+                    body=resp.text,
+                    phone_number_id=self.phone_number_id,
+                )
                 raise WhatsAppException(f"WhatsApp API error {resp.status_code}: {resp.text}")
             return resp.json()
 
@@ -58,7 +100,7 @@ class WhatsAppClient:
             "messaging_product": "whatsapp", "to": to, "type": "interactive",
             "interactive": {
                 "type": "button", "body": {"text": body},
-                "action": {"buttons": [{"type": "reply", "reply": {"id": b["id"], "title": b["title"]}} for b in buttons]},
+                "action": {"buttons": [{"type": "reply", "reply": {"id": b["id"], "title": b["title"]}} for b in buttons[:3]]},
             },
         })
 
@@ -99,10 +141,16 @@ class WhatsAppClient:
             return resp.json().get("url", "")
 
 
-_client: WhatsAppClient | None = None
+def get_whatsapp_client(tenant: Tenant | None = None) -> WhatsAppClient:
+    """
+    Factory — returns a tenant-specific client (using that tenant's own
+    WhatsApp Business number/token) if a tenant is provided, otherwise
+    falls back to a client built from the platform-wide settings.
 
-def get_whatsapp_client() -> WhatsAppClient:
-    global _client
-    if _client is None:
-        _client = WhatsAppClient()
-    return _client
+    Always pass the tenant when one is available in context: without it,
+    every tenant ends up sending/receiving through the same shared
+    WhatsApp number, which defeats per-tenant WhatsApp isolation.
+    """
+    if tenant:
+        return WhatsAppClient.from_tenant(tenant)
+    return WhatsAppClient()

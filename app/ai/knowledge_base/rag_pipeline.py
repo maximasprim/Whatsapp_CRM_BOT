@@ -49,9 +49,10 @@ class RAGPipeline:
     """Full Retrieval-Augmented Generation pipeline: retrieve relevant chunks,
     rank by relevance, inject as context, and generate a grounded answer with citations."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
         self.session = session
-        self.retriever = KnowledgeBaseRetriever(session)
+        self.tenant_id = tenant_id
+        self.retriever = KnowledgeBaseRetriever(session, tenant_id=tenant_id)
         self.provider = get_ai_provider()
 
     async def answer_question(

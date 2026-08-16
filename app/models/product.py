@@ -3,11 +3,13 @@ from __future__ import annotations
 import enum
 
 from sqlalchemy import Boolean, Enum as SAEnum, Float, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB
+# from sqlalchemy.dialects.postgresql import JSONB
+from app.core.database.types import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 
 class ProductStatus(str, enum.Enum):
@@ -17,7 +19,7 @@ class ProductStatus(str, enum.Enum):
     DISCONTINUED = "discontinued"
 
 
-class Product(BaseModel):
+class Product(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "products"
 
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)

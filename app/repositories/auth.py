@@ -62,6 +62,49 @@ class UserRepository(BaseRepository[User]):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    # ── Tenant-scoped variants ───────────────────────────────────────────────
+    # get_by_email / get_by_username / get_with_roles stay global on purpose:
+    # they run during login/token-refresh, before a tenant is known. Everything
+    # a tenant's own staff-management screens use goes through these instead,
+    # so one tenant's users are never visible/editable from another tenant.
+
+    async def get_by_id_in_tenant(self, user_id: uuid.UUID, tenant_id: uuid.UUID) -> User | None:
+        stmt = select(User).where(User.id == user_id, User.tenant_id == tenant_id)
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
+
+    async def get_all_in_tenant(
+        self, tenant_id: uuid.UUID, offset: int = 0, limit: int = 20
+    ) -> Sequence[User]:
+        stmt = select(User).where(User.tenant_id == tenant_id).offset(offset).limit(limit)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def count_in_tenant(self, tenant_id: uuid.UUID) -> int:
+        from sqlalchemy import func
+        stmt = select(func.count()).select_from(User).where(User.tenant_id == tenant_id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
+    async def search_in_tenant(
+        self, tenant_id: uuid.UUID, query: str, offset: int = 0, limit: int = 20
+    ) -> Sequence[User]:
+        pattern = f"%{query}%"
+        stmt = (
+            select(User)
+            .where(
+                User.tenant_id == tenant_id,
+                (User.email.ilike(pattern))
+                | (User.username.ilike(pattern))
+                | (User.first_name.ilike(pattern))
+                | (User.last_name.ilike(pattern)),
+            )
+            .offset(offset)
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
 
 class RoleRepository(BaseRepository[Role]):
     def __init__(self, session: AsyncSession) -> None:

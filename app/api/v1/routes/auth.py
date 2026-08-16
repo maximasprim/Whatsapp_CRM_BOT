@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_user
 from app.core.database.base import get_db
 from app.models.auth import User
+from app.tenant.middleware import get_current_tenant
+from app.models.tenant import Tenant
 from app.schemas.auth import (
     EmailVerificationRequest,
     LoginRequest,
@@ -30,9 +32,12 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 async def register(
     data: UserCreate,
     session: Annotated[AsyncSession, Depends(get_db)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant)],
 ) -> UserResponse:
+    # Tenant is resolved from the request itself (X-Tenant-Slug header,
+    # subdomain, or custom domain) since there's no logged-in user yet.
     service = AuthService(session)
-    user = await service.register(data)
+    user = await service.register(data, tenant_id=current_tenant.id)
     return UserResponse.model_validate(user)
 
 
@@ -93,7 +98,7 @@ async def update_me(
 ) -> UserResponse:
     from app.schemas.auth import UserUpdate
     service = AuthService(session)
-    user = await service.update_user(current_user.id, data)
+    user = await service.update_user(current_user.id, data, tenant_id=current_user.tenant_id)
     return UserResponse.model_validate(user)
 
 

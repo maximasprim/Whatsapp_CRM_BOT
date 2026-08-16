@@ -11,6 +11,7 @@ from app.models.conversation import (
     Conversation, ConversationMessage, ConversationStatus,
     MessageDirection, MessageType,
 )
+from app.models.tenant import Tenant
 from app.repositories.crm import CustomerRepository
 from app.services.crm import CustomerService
 from app.whatsapp.client import WhatsAppClient, get_whatsapp_client
@@ -20,26 +21,43 @@ logger = get_logger(__name__)
 
 
 class ConversationRepository:
-    def __init__(self, session: AsyncSession) -> None:
+    """Tenant-scoped: every query and every row created here is bound to
+    a single tenant, so one tenant's WhatsApp conversations are never
+    visible to, or mixed with, another's."""
+
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
         self.session = session
+        self.tenant_id = tenant_id
 
     async def get_or_create_conversation(self, customer_id: uuid.UUID, phone: str) -> tuple[Conversation, bool]:
         from sqlalchemy import and_, select
         stmt = select(Conversation).where(
-            and_(Conversation.customer_id == customer_id, Conversation.status.notin_([ConversationStatus.CLOSED]))
+            and_(
+                Conversation.tenant_id == self.tenant_id,
+                Conversation.customer_id == customer_id,
+                Conversation.status.notin_([ConversationStatus.CLOSED]),
+            )
         ).order_by(Conversation.created_at.desc())
         result = await self.session.execute(stmt)
         existing = result.scalars().first()
         if existing:
             return existing, False
-        conv = Conversation(customer_id=customer_id, phone_number=phone, status=ConversationStatus.OPEN)
+        conv = Conversation(
+            tenant_id=self.tenant_id, customer_id=customer_id,
+            phone_number=phone, status=ConversationStatus.OPEN,
+        )
         self.session.add(conv)
         await self.session.flush()
         await self.session.refresh(conv)
         return conv, True
 
     async def get_by_id(self, conv_id: uuid.UUID) -> Conversation | None:
-        return await self.session.get(Conversation, conv_id)
+        from sqlalchemy import select
+        stmt = select(Conversation).where(
+            Conversation.id == conv_id, Conversation.tenant_id == self.tenant_id
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
 
     async def add_message(
         self, conversation_id: uuid.UUID, direction: MessageDirection,
@@ -49,6 +67,7 @@ class ConversationRepository:
         raw_payload: dict | None = None, sender_id: uuid.UUID | None = None,
     ) -> ConversationMessage:
         msg = ConversationMessage(
+            tenant_id=self.tenant_id,
             conversation_id=conversation_id, direction=direction,
             message_type=message_type, content=content,
             whatsapp_message_id=whatsapp_message_id, media_url=media_url,
@@ -71,7 +90,10 @@ class ConversationRepository:
 
     async def update_message_status(self, whatsapp_message_id: str, status: str) -> None:
         from sqlalchemy import select
-        stmt = select(ConversationMessage).where(ConversationMessage.whatsapp_message_id == whatsapp_message_id)
+        stmt = select(ConversationMessage).where(
+            ConversationMessage.whatsapp_message_id == whatsapp_message_id,
+            ConversationMessage.tenant_id == self.tenant_id,
+        )
         result = await self.session.execute(stmt)
         msg = result.scalars().first()
         if msg:
@@ -88,11 +110,12 @@ class ConversationRepository:
 
 
 class WhatsAppConversationService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant: Tenant) -> None:
         self.session = session
-        self.conv_repo = ConversationRepository(session)
-        self.customer_service = CustomerService(session)
-        self.client: WhatsAppClient = get_whatsapp_client()
+        self.tenant = tenant
+        self.conv_repo = ConversationRepository(session, tenant_id=tenant.id)
+        self.customer_service = CustomerService(session, tenant_id=tenant.id)
+        self.client: WhatsAppClient = get_whatsapp_client(tenant)
 
     async def handle_inbound_message(self, parsed: ParsedMessage) -> ConversationMessage:
         customer, created = await self.customer_service.get_or_create_by_whatsapp(
@@ -152,4 +175,36 @@ class WhatsAppConversationService:
             content=text,
             whatsapp_message_id=wa_message_id,
             sender_id=sender_id,
+        )
+
+    async def initiate_conversation(
+        self,
+        customer_id: uuid.UUID,
+        phone: str,
+        template_name: str,
+        template_language: str = "en",
+        template_components: list[dict] | None = None,
+        source_note: str | None = None,
+    ) -> ConversationMessage:
+        """Start a new WhatsApp conversation from our side using an
+        approved template message (required outside the 24h customer
+        service window). Used for things like re-engaging a website lead."""
+        conversation, _ = await self.conv_repo.get_or_create_conversation(
+            customer_id=customer_id, phone=phone
+        )
+
+        response = await self.client.send_template(
+            to=phone,
+            template_name=template_name,
+            language=template_language,
+            components=template_components,
+        )
+        wa_message_id = response.get("messages", [{}])[0].get("id")
+
+        return await self.conv_repo.add_message(
+            conversation_id=conversation.id,
+            direction=MessageDirection.OUTBOUND,
+            message_type=MessageType.TEXT,
+            content=source_note or f"Template message sent: {template_name}",
+            whatsapp_message_id=wa_message_id,
         )

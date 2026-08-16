@@ -8,10 +8,11 @@ from pydantic import BaseModel
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_tenant_from_user, get_current_user
 from app.core.database.base import get_db
 from app.models.auth import User
 from app.models.conversation import Conversation, ConversationMessage, ConversationStatus
+from app.models.tenant import Tenant
 from app.schemas.common import PaginatedResponse, SuccessResponse
 
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
@@ -48,17 +49,29 @@ class ConversationResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+async def _get_tenant_conversation(session: AsyncSession, conversation_id: uuid.UUID, tenant_id: uuid.UUID) -> Conversation:
+    from app.core.exceptions import NotFoundException
+    stmt = select(Conversation).where(
+        Conversation.id == conversation_id, Conversation.tenant_id == tenant_id
+    )
+    conv = (await session.execute(stmt)).scalars().first()
+    if not conv:
+        raise NotFoundException("Conversation not found.")
+    return conv
+
+
 @router.get("", response_model=PaginatedResponse[ConversationResponse])
 async def list_conversations(
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
     status: str | None = Query(None),
     assigned_to: uuid.UUID | None = Query(None),
     unread_only: bool = Query(False),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ) -> PaginatedResponse[ConversationResponse]:
-    conditions = []
+    conditions = [Conversation.tenant_id == current_tenant.id]
     if status:
         conditions.append(Conversation.status == status)
     if assigned_to:
@@ -66,7 +79,7 @@ async def list_conversations(
     if unread_only:
         conditions.append(Conversation.unread_count > 0)
 
-    where = and_(*conditions) if conditions else True
+    where = and_(*conditions)
     offset = (page - 1) * page_size
 
     count = (await session.execute(select(func.count()).select_from(Conversation).where(where))).scalar_one()
@@ -97,11 +110,9 @@ async def get_conversation(
     conversation_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
 ) -> ConversationResponse:
-    from app.core.exceptions import NotFoundException
-    conv = await session.get(Conversation, conversation_id)
-    if not conv:
-        raise NotFoundException("Conversation not found.")
+    conv = await _get_tenant_conversation(session, conversation_id, current_tenant.id)
     return ConversationResponse(
         id=conv.id, customer_id=conv.customer_id, assigned_to=conv.assigned_to,
         phone_number=conv.phone_number, status=conv.status, is_bot_active=conv.is_bot_active,
@@ -116,16 +127,24 @@ async def get_conversation_messages(
     conversation_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
 ) -> PaginatedResponse[ConversationMessageResponse]:
+    # Also confirms the conversation itself belongs to this tenant.
+    await _get_tenant_conversation(session, conversation_id, current_tenant.id)
+
     offset = (page - 1) * page_size
+    where = and_(
+        ConversationMessage.conversation_id == conversation_id,
+        ConversationMessage.tenant_id == current_tenant.id,
+    )
     count = (await session.execute(
-        select(func.count()).select_from(ConversationMessage).where(ConversationMessage.conversation_id == conversation_id)
+        select(func.count()).select_from(ConversationMessage).where(where)
     )).scalar_one()
     result = await session.execute(
         select(ConversationMessage)
-        .where(ConversationMessage.conversation_id == conversation_id)
+        .where(where)
         .order_by(ConversationMessage.created_at.desc())
         .offset(offset)
         .limit(page_size)
@@ -148,11 +167,14 @@ async def assign_conversation(
     agent_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
 ) -> SuccessResponse:
-    from app.core.exceptions import NotFoundException
-    conv = await session.get(Conversation, conversation_id)
-    if not conv:
-        raise NotFoundException("Conversation not found.")
+    from app.repositories.auth import UserRepository
+    conv = await _get_tenant_conversation(session, conversation_id, current_tenant.id)
+    agent = await UserRepository(session).get_by_id_in_tenant(agent_id, current_tenant.id)
+    if agent is None:
+        from app.core.exceptions import NotFoundException
+        raise NotFoundException("Agent not found.")
     conv.assigned_to = agent_id
     conv.status = ConversationStatus.IN_PROGRESS
     session.add(conv)
@@ -165,11 +187,9 @@ async def toggle_bot(
     conversation_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
 ) -> SuccessResponse:
-    from app.core.exceptions import NotFoundException
-    conv = await session.get(Conversation, conversation_id)
-    if not conv:
-        raise NotFoundException("Conversation not found.")
+    conv = await _get_tenant_conversation(session, conversation_id, current_tenant.id)
     conv.is_bot_active = not conv.is_bot_active
     session.add(conv)
     await session.commit()
@@ -181,12 +201,10 @@ async def resolve_conversation(
     conversation_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
 ) -> SuccessResponse:
     from datetime import UTC, datetime
-    from app.core.exceptions import NotFoundException
-    conv = await session.get(Conversation, conversation_id)
-    if not conv:
-        raise NotFoundException("Conversation not found.")
+    conv = await _get_tenant_conversation(session, conversation_id, current_tenant.id)
     conv.status = ConversationStatus.RESOLVED
     conv.resolved_at = datetime.now(UTC)
     session.add(conv)
@@ -199,11 +217,9 @@ async def escalate_conversation(
     conversation_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
 ) -> SuccessResponse:
-    from app.core.exceptions import NotFoundException
-    conv = await session.get(Conversation, conversation_id)
-    if not conv:
-        raise NotFoundException("Conversation not found.")
+    conv = await _get_tenant_conversation(session, conversation_id, current_tenant.id)
     conv.status = ConversationStatus.ESCALATED
     conv.is_bot_active = False
     session.add(conv)

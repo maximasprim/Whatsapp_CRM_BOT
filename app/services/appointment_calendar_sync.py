@@ -21,10 +21,11 @@ class AppointmentCalendarSyncService:
     If the assigned agent hasn't connected a calendar, appointments are still
     created in the CRM normally — calendar sync is purely additive."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
         self.session = session
-        self.appt_repo = AppointmentRepository(session)
-        self.cust_repo = CustomerRepository(session)
+        self.tenant_id = tenant_id
+        self.appt_repo = AppointmentRepository(session, tenant_id=tenant_id)
+        self.cust_repo = CustomerRepository(session, tenant_id=tenant_id)
         self.cred_repo = CalendarCredentialRepository(session)
 
     async def is_calendar_connected(self, user_id: uuid.UUID) -> bool:
@@ -40,6 +41,7 @@ class AppointmentCalendarSyncService:
         from sqlalchemy import and_, select
         stmt = select(Appointment).where(
             and_(
+                Appointment.tenant_id == self.tenant_id,
                 Appointment.assigned_to == agent_id,
                 Appointment.status.notin_([AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]),
                 Appointment.start_time < end_time,
@@ -96,7 +98,7 @@ class AppointmentCalendarSyncService:
             customer = await self.cust_repo.get_by_id(data.customer_id)
             if customer and customer.phone:
                 from app.notifications.engine import NotificationChannel, NotificationEngine
-                engine = NotificationEngine(self.session)
+                engine = NotificationEngine(self.session, tenant_id=self.tenant_id)
                 await engine.send_templated(
                     template_key="appointment_confirmation",
                     context={

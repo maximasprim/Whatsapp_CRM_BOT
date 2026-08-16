@@ -10,9 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.providers import get_ai_provider
 from app.ai.providers.base import Message, MessageRole
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_tenant_from_user, get_current_user
 from app.core.database.base import get_db
 from app.models.auth import User
+from app.models.tenant import Tenant
 from app.schemas.common import SuccessResponse
 
 router = APIRouter(prefix="/ai", tags=["AI"])
@@ -70,26 +71,34 @@ async def suggest_reply(
     data: SuggestReplyRequest,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
 ) -> dict:
     from sqlalchemy import select
     from app.models.conversation import Conversation, ConversationMessage
     from app.models.customer import Customer
 
-    conv = await session.get(Conversation, data.conversation_id)
+    conv_stmt = select(Conversation).where(
+        Conversation.id == data.conversation_id, Conversation.tenant_id == current_tenant.id
+    )
+    conv = (await session.execute(conv_stmt)).scalars().first()
     if not conv:
         return {"reply": ""}
-    customer = await session.get(Customer, conv.customer_id)
+    customer_stmt = select(Customer).where(
+        Customer.id == conv.customer_id, Customer.tenant_id == current_tenant.id
+    )
+    customer = (await session.execute(customer_stmt)).scalars().first()
     if not customer:
         return {"reply": ""}
 
     stmt = select(ConversationMessage).where(
-        ConversationMessage.conversation_id == data.conversation_id
+        ConversationMessage.conversation_id == data.conversation_id,
+        ConversationMessage.tenant_id == current_tenant.id,
     ).order_by(ConversationMessage.created_at.desc()).limit(15)
     result = await session.execute(stmt)
     history = list(reversed(result.scalars().all()))
 
     from app.ai.crm_engine import AICRMEngine
-    engine = AICRMEngine(session)
+    engine = AICRMEngine(session, tenant_id=current_tenant.id)
     reply = await engine.generate_suggested_reply(customer, history, context=data.context)
     return {"reply": reply}
 
@@ -99,18 +108,25 @@ async def qualify_lead(
     customer_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
 ) -> dict:
     from sqlalchemy import select
     from app.models.conversation import Conversation, ConversationMessage
     from app.models.customer import Customer
 
-    customer = await session.get(Customer, customer_id)
+    customer_stmt = select(Customer).where(
+        Customer.id == customer_id, Customer.tenant_id == current_tenant.id
+    )
+    customer = (await session.execute(customer_stmt)).scalars().first()
     if not customer:
         return {}
 
     stmt = select(ConversationMessage).join(
         Conversation, Conversation.id == ConversationMessage.conversation_id
-    ).where(Conversation.customer_id == customer_id).order_by(
+    ).where(
+        Conversation.customer_id == customer_id,
+        ConversationMessage.tenant_id == current_tenant.id,
+    ).order_by(
         ConversationMessage.created_at.desc()
     ).limit(50)
     result = await session.execute(stmt)
@@ -118,6 +134,6 @@ async def qualify_lead(
     conversation_text = "\n".join([m.content or "" for m in messages if m.content])
 
     from app.ai.crm_engine import AICRMEngine
-    engine = AICRMEngine(session)
+    engine = AICRMEngine(session, tenant_id=current_tenant.id)
     qualification = await engine.qualify_lead(customer, conversation_text)
     return qualification

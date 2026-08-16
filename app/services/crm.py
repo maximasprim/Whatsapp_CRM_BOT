@@ -14,7 +14,7 @@ from app.models.appointment import Appointment
 from app.models.campaign import Campaign, CampaignRecipient, CampaignStatus
 from app.models.company import Company
 from app.models.customer import Customer
-from app.models.followup import FollowUp
+from app.models.follow_up import FollowUp
 from app.models.lead import Lead, LeadStage
 from app.models.note import Note
 from app.models.notification import Notification, NotificationType
@@ -46,9 +46,10 @@ def _generate_ticket_number() -> str:
 
 
 class CustomerService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = CustomerRepository(session)
-        self.activity_repo = ActivityRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self.tenant_id = tenant_id
+        self.repo = CustomerRepository(session, tenant_id=tenant_id)
+        self.activity_repo = ActivityRepository(session, tenant_id=tenant_id)
         self.session = session
 
     async def create(self, data: CustomerCreate, created_by: uuid.UUID | None = None) -> Customer:
@@ -114,8 +115,9 @@ class CustomerService:
 
 
 class CompanyService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = CompanyRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self.tenant_id = tenant_id
+        self.repo = CompanyRepository(session, tenant_id=tenant_id)
 
     async def create(self, data: CompanyCreate) -> Company:
         if data.domain and await self.repo.get_by_domain(data.domain):
@@ -143,9 +145,10 @@ class CompanyService:
 
 
 class LeadService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = LeadRepository(session)
-        self.activity_repo = ActivityRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self.tenant_id = tenant_id
+        self.repo = LeadRepository(session, tenant_id=tenant_id)
+        self.activity_repo = ActivityRepository(session, tenant_id=tenant_id)
         self.session = session
 
     async def create(self, data: LeadCreate, created_by: uuid.UUID | None = None) -> Lead:
@@ -197,8 +200,9 @@ class LeadService:
 
 
 class ProductService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = ProductRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self.tenant_id = tenant_id
+        self.repo = ProductRepository(session, tenant_id=tenant_id)
 
     async def create(self, data: ProductCreate) -> Product:
         if data.sku and await self.repo.get_by_sku(data.sku):
@@ -225,10 +229,11 @@ class ProductService:
 
 
 class OrderService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = OrderRepository(session)
-        self.product_repo = ProductRepository(session)
-        self.activity_repo = ActivityRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self.tenant_id = tenant_id
+        self.repo = OrderRepository(session, tenant_id=tenant_id)
+        self.product_repo = ProductRepository(session, tenant_id=tenant_id)
+        self.activity_repo = ActivityRepository(session, tenant_id=tenant_id)
         self.session = session
 
     async def create(self, data: OrderCreate, created_by: uuid.UUID | None = None) -> Order:
@@ -265,7 +270,7 @@ class OrderService:
             notes=data.notes,
         )
         for item_kwargs in items_data:
-            item = OrderItem(order_id=order.id, **item_kwargs)
+            item = OrderItem(order_id=order.id, tenant_id=self.tenant_id, **item_kwargs)
             self.session.add(item)
         await self.session.flush()
         await self.activity_repo.log(
@@ -279,10 +284,10 @@ class OrderService:
         try:
             from app.repositories.crm import CustomerRepository
             from app.notifications.engine import NotificationChannel, NotificationEngine
-            cust_repo = CustomerRepository(self.session)
+            cust_repo = CustomerRepository(self.session, tenant_id=self.tenant_id)
             customer = await cust_repo.get_by_id(data.customer_id)
             if customer and customer.phone:
-                engine = NotificationEngine(self.session)
+                engine = NotificationEngine(self.session, tenant_id=self.tenant_id)
                 channels = [NotificationChannel.WHATSAPP]
                 if customer.email:
                     channels.append(NotificationChannel.EMAIL)
@@ -313,9 +318,10 @@ class OrderService:
 
 
 class AppointmentService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = AppointmentRepository(session)
-        self.activity_repo = ActivityRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self.tenant_id = tenant_id
+        self.repo = AppointmentRepository(session, tenant_id=tenant_id)
+        self.activity_repo = ActivityRepository(session, tenant_id=tenant_id)
         self.session = session
 
     async def list(
@@ -360,8 +366,9 @@ class AppointmentService:
 
 
 class TaskService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = TaskRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self.tenant_id = tenant_id
+        self.repo = TaskRepository(session, tenant_id=tenant_id)
         self.session = session
 
     async def create(self, data: TaskCreate, created_by: uuid.UUID | None = None) -> Task:
@@ -378,24 +385,18 @@ class TaskService:
         return await self.repo.get_by_id_or_raise(task_id)
 
     async def list(self, assigned_to: uuid.UUID | None = None, offset: int = 0, limit: int = 20) -> tuple[Sequence[Task], int]:
-        from sqlalchemy import and_, func, select
-        conditions = []
-        if assigned_to:
-            conditions.append(Task.assigned_to == assigned_to)
-        from sqlalchemy import and_
-        where = and_(*conditions) if conditions else True
-        count = (await self.session.execute(select(func.count()).select_from(Task).where(where))).scalar_one()
-        items = (await self.session.execute(select(Task).where(where).offset(offset).limit(limit))).scalars().all()
-        return items, count
+        page = (offset // limit) + 1 if limit else 1
+        return await self.repo.get_all(page=page, page_size=limit or 20, assigned_to=assigned_to)
 
     async def delete(self, task_id: uuid.UUID) -> None:
         await self.repo.delete_by_id(task_id)
 
 
 class CampaignService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = CampaignRepository(session)
-        self.customer_repo = CustomerRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self.tenant_id = tenant_id
+        self.repo = CampaignRepository(session, tenant_id=tenant_id)
+        self.customer_repo = CustomerRepository(session, tenant_id=tenant_id)
         self.session = session
 
     async def create(self, data: CampaignCreate, created_by: uuid.UUID | None = None) -> Campaign:
@@ -406,7 +407,7 @@ class CampaignService:
         campaign = await self.repo.get_by_id_or_raise(campaign_id)
         count = 0
         for cid in customer_ids:
-            recipient = CampaignRecipient(campaign_id=campaign_id, customer_id=cid)
+            recipient = CampaignRecipient(campaign_id=campaign_id, customer_id=cid, tenant_id=self.tenant_id)
             self.session.add(recipient)
             count += 1
         campaign.total_recipients = count
@@ -422,15 +423,15 @@ class CampaignService:
         return await self.repo.update(campaign, **data.model_dump(exclude_unset=True))
 
     async def list(self, offset: int = 0, limit: int = 20) -> tuple[Sequence[Campaign], int]:
-        items = await self.repo.get_all(offset=offset, limit=limit)
-        count = await self.repo.count()
+        items, count = await self.repo.get_all(offset=offset, limit=limit)
         return items, count
 
 
 class TicketService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = TicketRepository(session)
-        self.activity_repo = ActivityRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self.tenant_id = tenant_id
+        self.repo = TicketRepository(session, tenant_id=tenant_id)
+        self.activity_repo = ActivityRepository(session, tenant_id=tenant_id)
         self.session = session
 
     async def create(self, data: TicketCreate, created_by: uuid.UUID | None = None) -> SupportTicket:
@@ -449,10 +450,10 @@ class TicketService:
         try:
             from app.repositories.crm import CustomerRepository
             from app.notifications.engine import NotificationChannel, NotificationEngine
-            cust_repo = CustomerRepository(self.session)
+            cust_repo = CustomerRepository(self.session, tenant_id=self.tenant_id)
             customer = await cust_repo.get_by_id(data.customer_id)
             if customer and customer.phone:
-                engine = NotificationEngine(self.session)
+                engine = NotificationEngine(self.session, tenant_id=self.tenant_id)
                 channels = [NotificationChannel.WHATSAPP]
                 if customer.email:
                     channels.append(NotificationChannel.EMAIL)
@@ -485,8 +486,7 @@ class TicketService:
         return await self.repo.get_by_id_or_raise(ticket_id)
 
     async def list(self, offset: int = 0, limit: int = 20) -> tuple[Sequence[SupportTicket], int]:
-        items = await self.repo.get_all(offset=offset, limit=limit)
-        count = await self.repo.count()
+        items, count = await self.repo.get_all(offset=offset, limit=limit)
         return items, count
 
     async def add_message(
@@ -500,6 +500,7 @@ class TicketService:
             sender_id=sender_id,
             content=content,
             is_internal=is_internal,
+            tenant_id=self.tenant_id,
         )
         self.session.add(message)
         await self.session.flush()
@@ -507,8 +508,9 @@ class TicketService:
 
 
 class NoteService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = NoteRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self.tenant_id = tenant_id
+        self.repo = NoteRepository(session, tenant_id=tenant_id)
 
     async def create(self, data: NoteCreate, created_by: uuid.UUID | None = None) -> Note:
         return await self.repo.create(**data.model_dump(), created_by=created_by)
@@ -521,8 +523,9 @@ class NoteService:
 
 
 class NotificationService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.repo = NotificationRepository(session)
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self.tenant_id = tenant_id
+        self.repo = NotificationRepository(session, tenant_id=tenant_id)
 
     async def create(
         self,

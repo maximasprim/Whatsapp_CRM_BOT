@@ -53,7 +53,7 @@ class AuthService:
         self.token_repo = RefreshTokenRepository(session)
 
     # ── Registration ──────────────────────────────────────────────────────────
-    async def register(self, data: UserCreate) -> User:
+    async def register(self, data: UserCreate, tenant_id: uuid.UUID) -> User:
         if await self.user_repo.get_by_email(data.email):
             raise ConflictException("Email already registered.")
         if await self.user_repo.get_by_username(data.username):
@@ -66,6 +66,7 @@ class AuthService:
                 roles.append(role)
 
         user = await self.user_repo.create(
+            tenant_id=tenant_id,
             email=data.email.lower(),
             username=data.username,
             hashed_password=hash_password(data.password),
@@ -219,9 +220,9 @@ class AuthService:
         await self.session.flush()
 
     # ── User management ───────────────────────────────────────────────────────
-    async def update_user(self, user_id: uuid.UUID, data: UserUpdate) -> User:
+    async def update_user(self, user_id: uuid.UUID, data: UserUpdate, tenant_id: uuid.UUID) -> User:
         user = await self.user_repo.get_with_roles(user_id)
-        if user is None:
+        if user is None or user.tenant_id != tenant_id:
             raise NotFoundException("User not found.")
         update_data = data.model_dump(exclude_unset=True, exclude={"role_ids"})
         for key, value in update_data.items():

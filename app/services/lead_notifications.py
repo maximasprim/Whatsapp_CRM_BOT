@@ -19,6 +19,7 @@ AGENT_ROLE_NAME = "sales_agent"
 
 async def notify_agents_of_new_lead(
     session: AsyncSession,
+    tenant_id: uuid.UUID,
     lead_id: uuid.UUID,
     lead_title: str,
     customer_name: str,
@@ -37,7 +38,11 @@ async def notify_agents_of_new_lead(
         select(User)
         .join(user_roles, user_roles.c.user_id == User.id)
         .join(Role, Role.id == user_roles.c.role_id)
-        .where(Role.name == AGENT_ROLE_NAME, User.is_active.is_(True))
+        .where(
+            Role.name == AGENT_ROLE_NAME,
+            User.is_active.is_(True),
+            User.tenant_id == tenant_id,
+        )
     )
     agents = (await session.execute(stmt)).scalars().all()
 
@@ -45,7 +50,7 @@ async def notify_agents_of_new_lead(
         logger.warning("lead_notification_no_active_agents", role=AGENT_ROLE_NAME)
         return
 
-    notification_service = NotificationService(session)
+    notification_service = NotificationService(session, tenant_id=tenant_id)
     title = "New website lead"
     body = f"{customer_name} ({customer_phone}) — {lead_title}"
 

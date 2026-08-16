@@ -5,10 +5,13 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Index, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+# from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
+from app.core.database.types import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 
 class CampaignStatus(str, enum.Enum):
@@ -36,7 +39,7 @@ class RecipientStatus(str, enum.Enum):
     OPTED_OUT = "opted_out"
 
 
-class Campaign(BaseModel):
+class Campaign(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "campaigns"
 
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -74,7 +77,7 @@ class Campaign(BaseModel):
     )
 
 
-class CampaignRecipient(BaseModel):
+class CampaignRecipient(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "campaign_recipients"
 
     campaign_id: Mapped[uuid.UUID] = mapped_column(

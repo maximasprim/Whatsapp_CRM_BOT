@@ -4,11 +4,14 @@ import uuid
 import enum
 
 from sqlalchemy import Enum as SAEnum, Float, ForeignKey, Index, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+# from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
+from app.core.database.types import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.base import BaseModel
 from app.models.product import Product
+from app.models.tenant_mixin import TenantMixin
 
 
 class OrderStatus(str, enum.Enum):
@@ -29,7 +32,7 @@ class PaymentStatus(str, enum.Enum):
     REFUNDED = "refunded"
 
 
-class Order(BaseModel):
+class Order(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "orders"
 
     order_number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
@@ -67,7 +70,7 @@ class Order(BaseModel):
     __table_args__ = (Index("ix_orders_customer_status", "customer_id", "status"),)
 
 
-class OrderItem(BaseModel):
+class OrderItem(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "order_items"
 
     order_id: Mapped[uuid.UUID] = mapped_column(
@@ -86,7 +89,7 @@ class OrderItem(BaseModel):
     product: Mapped[Product] = relationship("Product")
 
 
-class Payment(BaseModel):
+class Payment(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "payments"
 
     order_id: Mapped[uuid.UUID] = mapped_column(

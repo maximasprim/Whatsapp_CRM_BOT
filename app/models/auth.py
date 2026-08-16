@@ -19,6 +19,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.base import Base, BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 if TYPE_CHECKING:
     from app.models.crm import Customer
@@ -73,7 +74,9 @@ class Role(BaseModel):
     )
 
 
-class User(BaseModel):
+# class User(BaseModel):
+#     __tablename__ = "users"
+class User(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "users"
 
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)

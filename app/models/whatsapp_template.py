@@ -3,10 +3,12 @@ from __future__ import annotations
 import enum
 
 from sqlalchemy import Enum as SAEnum, String, Text
-from sqlalchemy.dialects.postgresql import JSONB
+# from sqlalchemy.dialects.postgresql import JSONB
+from app.core.database.types import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 
 class TemplateStatus(str, enum.Enum):
@@ -16,7 +18,7 @@ class TemplateStatus(str, enum.Enum):
     PAUSED = "paused"
 
 
-class WhatsAppTemplate(BaseModel):
+class WhatsAppTemplate(TenantMixin, BaseModel):
     __tablename__ = "whatsapp_templates"
 
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)

@@ -9,7 +9,7 @@ from app.models.product import Product, ProductStatus
 from app.models.order import Order, OrderItem, Payment, OrderStatus, PaymentStatus
 from app.models.appointment import Appointment, AppointmentStatus, AppointmentType
 from app.models.task import Task, TaskStatus, TaskPriority
-from app.models.followup import FollowUp, FollowUpStatus, FollowUpType
+from app.models.follow_up import FollowUp, FollowUpStatus, FollowUpType
 from app.models.note import Note
 from app.models.campaign import Campaign, CampaignRecipient, CampaignStatus, CampaignType
 from app.models.ticket import SupportTicket, TicketMessage, TicketStatus, TicketPriority

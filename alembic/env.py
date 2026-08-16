@@ -14,6 +14,7 @@ import app.models.auth  # noqa: F401
 import app.models.crm   # noqa: F401
 import app.models.whatsapp  # noqa: F401
 import app.models.ai_memory  # noqa: F401
+import app.models.tenant
 
 from app.core.config import settings
 

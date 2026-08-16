@@ -9,12 +9,13 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_tenant_from_user, get_current_user
 from app.core.config import settings
 from app.core.database.base import get_db
 from app.core.security import create_verification_token, decode_verification_token
 from app.integrations.google_calendar.oauth import build_authorization_url, exchange_code_for_tokens
 from app.models.auth import User
+from app.models.tenant import Tenant
 from app.repositories.calendar_credential import CalendarCredentialRepository
 from app.schemas.common import SuccessResponse
 from app.services.appointment_calendar_sync import AppointmentCalendarSyncService
@@ -91,8 +92,15 @@ async def get_availability(
     date: datetime,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
     slot_duration_minutes: int = Query(30, ge=15, le=240),
 ) -> dict:
-    service = AppointmentCalendarSyncService(session)
+    from app.repositories.auth import UserRepository
+    user_repo = UserRepository(session)
+    agent = await user_repo.get_by_id_in_tenant(agent_id, current_tenant.id)
+    if agent is None:
+        return {"date": date.date().isoformat(), "slots": []}
+
+    service = AppointmentCalendarSyncService(session, tenant_id=current_tenant.id)
     slots = await service.get_available_slots(agent_id, date, slot_duration_minutes=slot_duration_minutes)
     return {"date": date.date().isoformat(), "slots": slots}

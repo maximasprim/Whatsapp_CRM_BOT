@@ -105,6 +105,10 @@ def _register_routers(app: FastAPI) -> None:
     from app.api.v1.routes.rag import router as rag_router
     from app.api.v1.routes.calendar import router as calendar_router
     from app.api.v1.routes.public import router as public_router
+    # Add these imports inside _register_routers():
+    from app.api.v1.routes.tenants import router as tenants_router
+    from app.api.v1.routes.billing import router as billing_router
+    from app.api.v1.routes.admin import router as admin_router
 
     prefix = "/api"
     app.include_router(auth_router, prefix=prefix)
@@ -129,6 +133,11 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(rag_router, prefix=prefix)
     app.include_router(calendar_router, prefix=prefix)
     app.include_router(public_router, prefix=prefix)
+
+    # Add these include_router calls:
+    app.include_router(tenants_router, prefix=prefix)
+    app.include_router(billing_router, prefix=prefix)
+    app.include_router(admin_router, prefix=prefix)
 
     @app.get("/health", tags=["Health"])
     async def health_check() -> dict:

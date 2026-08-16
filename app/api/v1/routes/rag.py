@@ -7,9 +7,10 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_tenant_from_user, get_current_user
 from app.core.database.base import get_db
 from app.models.auth import User
+from app.models.tenant import Tenant
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
 
@@ -41,9 +42,10 @@ async def rag_query(
     data: RAGQueryRequest,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
 ) -> RAGQueryResponse:
     from app.ai.knowledge_base.rag_pipeline import RAGPipeline
-    pipeline = RAGPipeline(session)
+    pipeline = RAGPipeline(session, tenant_id=current_tenant.id)
     response, should_escalate = await pipeline.answer_with_fallback_to_human(data.question)
 
     return RAGQueryResponse(
@@ -66,6 +68,7 @@ async def rag_auto_reply(
     conversation_id: uuid.UUID,
     session: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    current_tenant: Annotated[Tenant, Depends(get_current_tenant_from_user)],
 ) -> dict:
     """Generate a RAG-grounded reply for the latest customer message in a conversation,
     and send it via WhatsApp if confidence is high enough."""
@@ -73,12 +76,16 @@ async def rag_auto_reply(
     from app.models.conversation import Conversation, ConversationMessage, MessageDirection
     from app.ai.knowledge_base.rag_pipeline import RAGPipeline
 
-    conv = await session.get(Conversation, conversation_id)
+    conv_stmt = select(Conversation).where(
+        Conversation.id == conversation_id, Conversation.tenant_id == current_tenant.id
+    )
+    conv = (await session.execute(conv_stmt)).scalars().first()
     if not conv:
         return {"error": "Conversation not found."}
 
     stmt = select(ConversationMessage).where(
         ConversationMessage.conversation_id == conversation_id,
+        ConversationMessage.tenant_id == current_tenant.id,
         ConversationMessage.direction == MessageDirection.INBOUND,
     ).order_by(ConversationMessage.created_at.desc()).limit(1)
     result = await session.execute(stmt)
@@ -87,7 +94,7 @@ async def rag_auto_reply(
     if not last_message or not last_message.content:
         return {"error": "No customer question found."}
 
-    pipeline = RAGPipeline(session)
+    pipeline = RAGPipeline(session, tenant_id=current_tenant.id)
     rag_response, should_escalate = await pipeline.answer_with_fallback_to_human(last_message.content)
 
     if should_escalate:
@@ -102,7 +109,7 @@ async def rag_auto_reply(
         }
 
     from app.whatsapp.conversation_service import WhatsAppConversationService
-    wa_service = WhatsAppConversationService(session)
+    wa_service = WhatsAppConversationService(session, tenant=current_tenant)
     await wa_service.send_reply(conversation_id, rag_response.answer)
     await session.commit()
 

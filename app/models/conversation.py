@@ -6,10 +6,13 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, Enum as SAEnum, Float, ForeignKey, Index, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+# from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
+from app.core.database.types import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 if TYPE_CHECKING:
     from app.models.customer import Customer
@@ -46,7 +49,7 @@ class MessageType(str, enum.Enum):
     UNSUPPORTED = "unsupported"
 
 
-class Conversation(BaseModel):
+class Conversation(TenantMixin, BaseModel):
     __tablename__ = "conversations"
 
     customer_id: Mapped[uuid.UUID] = mapped_column(
@@ -87,7 +90,7 @@ class Conversation(BaseModel):
     __table_args__ = (Index("ix_conversations_customer_status", "customer_id", "status"),)
 
 
-class ConversationMessage(BaseModel):
+class ConversationMessage(TenantMixin, BaseModel):
     __tablename__ = "conversation_messages"
 
     conversation_id: Mapped[uuid.UUID] = mapped_column(

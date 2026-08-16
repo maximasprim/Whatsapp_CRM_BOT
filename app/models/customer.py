@@ -7,10 +7,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     Boolean, Enum as SAEnum, Float, ForeignKey, Index, Integer, String, Text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+# from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
+from app.core.database.types import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 if TYPE_CHECKING:
     from app.models.company import Company
@@ -34,7 +37,9 @@ class CustomerGender(str, enum.Enum):
     UNKNOWN = "unknown"
 
 
-class Customer(BaseModel):
+# class Customer(BaseModel):
+#     __tablename__ = "customers"
+class Customer(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "customers"
 
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)

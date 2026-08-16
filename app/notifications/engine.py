@@ -30,12 +30,13 @@ class NotificationEngine:
     Each send_* call is independent and failures in one channel never block
     the others — every attempt is logged."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
         self.session = session
+        self.tenant_id = tenant_id
         self.email = get_email_channel()
         self.sms = get_sms_channel()
         self.push = get_push_channel()
-        self.internal_repo = NotificationService(session)
+        self.internal_repo = NotificationService(session, tenant_id=tenant_id)
 
     async def send_templated(
         self,
@@ -72,9 +73,11 @@ class NotificationEngine:
 
         if NotificationChannel.WHATSAPP in channels and whatsapp_to:
             try:
+                from app.models.tenant import Tenant
                 from app.whatsapp.client import get_whatsapp_client
                 body = render_template(template_key, "whatsapp", context)
-                client = get_whatsapp_client()
+                tenant = await self.session.get(Tenant, self.tenant_id)
+                client = get_whatsapp_client(tenant)
                 wa_result = await client.send_text(to=whatsapp_to, body=body)
                 results["whatsapp"] = {"status": "sent", "response": wa_result}
             except Exception as exc:

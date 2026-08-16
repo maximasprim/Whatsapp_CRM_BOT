@@ -5,10 +5,13 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Enum as SAEnum, ForeignKey, Index, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+# from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
+from app.core.database.types import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 
 class NotificationType(str, enum.Enum):
@@ -25,7 +28,7 @@ class NotificationType(str, enum.Enum):
     SYSTEM = "system"
 
 
-class Notification(BaseModel):
+class Notification(TenantMixin, BaseModel):
     __tablename__ = "notifications"
 
     user_id: Mapped[uuid.UUID] = mapped_column(

@@ -5,10 +5,13 @@ import enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum as SAEnum, Float, ForeignKey, Index, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+# from sqlalchemy.dialects.postgresql import JSONB, 
+from sqlalchemy.dialects.postgresql import UUID
+from app.core.database.types import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 if TYPE_CHECKING:
     from app.models.customer import Customer
@@ -43,7 +46,9 @@ class LeadSource(str, enum.Enum):
     OTHER = "other"
 
 
-class Lead(BaseModel):
+# class Lead(BaseModel):
+#     __tablename__ = "leads"
+class Lead(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "leads"
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)

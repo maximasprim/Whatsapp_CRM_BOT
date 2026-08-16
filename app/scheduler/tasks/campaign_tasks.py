@@ -13,52 +13,62 @@ def process_scheduled_campaigns() -> dict:
 
 
 async def _process_campaigns() -> dict:
+    from sqlalchemy import select
     from app.core.database.base import AsyncSessionLocal
     from app.models.campaign import CampaignStatus, RecipientStatus
+    from app.models.tenant import Tenant
     from app.repositories.crm import CampaignRepository, CustomerRepository
     from app.whatsapp.client import get_whatsapp_client
     from datetime import UTC, datetime
 
     processed = 0
     async with AsyncSessionLocal() as session:
-        repo = CampaignRepository(session)
-        cust_repo = CustomerRepository(session)
-        client = get_whatsapp_client()
-        campaigns = await repo.get_scheduled_campaigns()
+        tenants = (
+            await session.execute(select(Tenant).where(Tenant.is_active == True))
+        ).scalars().all()
 
-        for campaign in campaigns:
-            try:
-                await repo.update(campaign, status=CampaignStatus.RUNNING, started_at=datetime.now(UTC))
-                recipients = await repo.get_pending_recipients(campaign.id, limit=100)
+        # This job scans every active tenant in turn, but every repository/
+        # client instance below is scoped to that one tenant's id — so a
+        # campaign in tenant A can never be processed with tenant B's data,
+        # recipients, or WhatsApp credentials.
+        for tenant in tenants:
+            repo = CampaignRepository(session, tenant_id=tenant.id)
+            cust_repo = CustomerRepository(session, tenant_id=tenant.id)
+            client = get_whatsapp_client(tenant)
+            campaigns = await repo.get_scheduled_campaigns()
 
-                sent = 0
-                failed = 0
-                for recipient in recipients:
-                    try:
-                        customer = await cust_repo.get_by_id(recipient.customer_id)
-                        if customer and customer.phone:
-                            if campaign.whatsapp_template_name:
-                                resp = await client.send_template(to=customer.phone, template_name=campaign.whatsapp_template_name)
-                            else:
-                                resp = await client.send_text(to=customer.phone, body=campaign.message_template)
-                            wa_id = resp.get("messages", [{}])[0].get("id")
-                            from sqlalchemy import update
-                            recipient.status = RecipientStatus.SENT
-                            recipient.sent_at = datetime.now(UTC)
-                            recipient.whatsapp_message_id = wa_id
+            for campaign in campaigns:
+                try:
+                    await repo.update(campaign, status=CampaignStatus.RUNNING, started_at=datetime.now(UTC))
+                    recipients = await repo.get_pending_recipients(campaign.id, limit=100)
+
+                    sent = 0
+                    failed = 0
+                    for recipient in recipients:
+                        try:
+                            customer = await cust_repo.get_by_id(recipient.customer_id)
+                            if customer and customer.phone:
+                                if campaign.whatsapp_template_name:
+                                    resp = await client.send_template(to=customer.phone, template_name=campaign.whatsapp_template_name)
+                                else:
+                                    resp = await client.send_text(to=customer.phone, body=campaign.message_template)
+                                wa_id = resp.get("messages", [{}])[0].get("id")
+                                recipient.status = RecipientStatus.SENT
+                                recipient.sent_at = datetime.now(UTC)
+                                recipient.whatsapp_message_id = wa_id
+                                session.add(recipient)
+                                sent += 1
+                        except Exception as e:
+                            logger.error("Campaign send failed", recipient=str(recipient.id), error=str(e))
+                            recipient.status = RecipientStatus.FAILED
+                            recipient.error_message = str(e)
                             session.add(recipient)
-                            sent += 1
-                    except Exception as e:
-                        logger.error("Campaign send failed", recipient=str(recipient.id), error=str(e))
-                        recipient.status = RecipientStatus.FAILED
-                        recipient.error_message = str(e)
-                        session.add(recipient)
-                        failed += 1
+                            failed += 1
 
-                await repo.update(campaign, sent_count=campaign.sent_count + sent, failed_count=campaign.failed_count + failed)
-                processed += 1
-            except Exception as e:
-                logger.error("Campaign processing error", campaign_id=str(campaign.id), error=str(e))
+                    await repo.update(campaign, sent_count=campaign.sent_count + sent, failed_count=campaign.failed_count + failed)
+                    processed += 1
+                except Exception as e:
+                    logger.error("Campaign processing error", campaign_id=str(campaign.id), tenant_id=str(tenant.id), error=str(e))
 
         await session.commit()
     return {"processed": processed}

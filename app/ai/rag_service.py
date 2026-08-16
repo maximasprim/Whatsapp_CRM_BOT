@@ -20,9 +20,10 @@ Be concise, accurate, and cite which document your answer comes from when possib
 class RAGService:
     """Retrieval-Augmented Generation — answers queries from the knowledge base."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant_id) -> None:
         self.session = session
-        self.retriever = KnowledgeBaseRetriever(session)
+        self.tenant_id = tenant_id
+        self.retriever = KnowledgeBaseRetriever(session, tenant_id=tenant_id)
         self.provider = get_ai_provider()
 
     async def answer(
@@ -105,7 +106,10 @@ class RAGService:
 
             try:
                 cid = uuid.UUID(customer_id)
-                customer = await self.session.get(Customer, cid)
+                customer_stmt = select(Customer).where(
+                    Customer.id == cid, Customer.tenant_id == self.tenant_id
+                )
+                customer = (await self.session.execute(customer_stmt)).scalars().first()
                 if customer:
                     extra_context += (
                         f"\nCustomer context: {customer.full_name}, "
@@ -116,7 +120,7 @@ class RAGService:
                     # Include recent notes
                     notes_result = await self.session.execute(
                         select(Note)
-                        .where(Note.customer_id == cid)
+                        .where(Note.customer_id == cid, Note.tenant_id == self.tenant_id)
                         .order_by(Note.created_at.desc())
                         .limit(3)
                     )

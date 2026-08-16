@@ -23,8 +23,9 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 
 class KnowledgeBaseRetriever:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant_id) -> None:
         self.session = session
+        self.tenant_id = tenant_id
         self.provider = get_ai_provider()
 
     async def search(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
@@ -33,6 +34,8 @@ class KnowledgeBaseRetriever:
         stmt = (
             select(DocumentChunk, KnowledgeDocument.title)
             .join(KnowledgeDocument, KnowledgeDocument.id == DocumentChunk.document_id)
+            .where(KnowledgeDocument.tenant_id == self.tenant_id)
+            .where(DocumentChunk.tenant_id == self.tenant_id)
             .where(KnowledgeDocument.status == DocumentStatus.READY)
             .where(DocumentChunk.embedding.isnot(None))
         )

@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 
 class TicketStatus(str, enum.Enum):
@@ -26,7 +27,7 @@ class TicketPriority(str, enum.Enum):
     URGENT = "urgent"
 
 
-class SupportTicket(BaseModel):
+class SupportTicket(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "support_tickets"
 
     ticket_number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
@@ -61,7 +62,7 @@ class SupportTicket(BaseModel):
     __table_args__ = (Index("ix_tickets_customer_status", "customer_id", "status"),)
 
 
-class TicketMessage(BaseModel):
+class TicketMessage(TenantMixin, BaseModel):
     __tablename__ = "ticket_messages"
 
     ticket_id: Mapped[uuid.UUID] = mapped_column(

@@ -22,6 +22,7 @@ os.environ.setdefault("WHATSAPP_APP_SECRET", "test-app-secret")
 
 from app.core.database.base import Base, get_db
 from app.models.auth import User
+from app.models.tenant import Tenant
 from app.core.security import hash_password, create_access_token
 
 # Use an in-memory SQLite database for fast, isolated test runs.
@@ -79,9 +80,24 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest_asyncio.fixture
-async def test_user(db_session: AsyncSession) -> User:
+async def test_tenant(db_session: AsyncSession) -> Tenant:
+    tenant = Tenant(
+        id=uuid.uuid4(),
+        name="Test Business",
+        slug=f"test-{uuid.uuid4().hex[:8]}",
+        is_active=True,
+    )
+    db_session.add(tenant)
+    await db_session.flush()
+    await db_session.refresh(tenant)
+    return tenant
+
+
+@pytest_asyncio.fixture
+async def test_user(db_session: AsyncSession, test_tenant: Tenant) -> User:
     user = User(
         id=uuid.uuid4(),
+        tenant_id=test_tenant.id,
         email="testuser@example.com",
         username="testuser",
         hashed_password=hash_password("TestPassword123"),
@@ -98,9 +114,10 @@ async def test_user(db_session: AsyncSession) -> User:
 
 
 @pytest_asyncio.fixture
-async def superuser(db_session: AsyncSession) -> User:
+async def superuser(db_session: AsyncSession, test_tenant: Tenant) -> User:
     user = User(
         id=uuid.uuid4(),
+        tenant_id=test_tenant.id,
         email="admin@example.com",
         username="admin",
         hashed_password=hash_password("AdminPassword123"),
@@ -118,11 +135,19 @@ async def superuser(db_session: AsyncSession) -> User:
 
 @pytest.fixture
 def auth_headers(test_user: User) -> dict[str, str]:
-    token = create_access_token(subject=test_user.id, extra_claims={"email": test_user.email})
+    token = create_access_token(
+        subject=test_user.id,
+        tenant_id=str(test_user.tenant_id),
+        extra_claims={"email": test_user.email},
+    )
     return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture
 def superuser_auth_headers(superuser: User) -> dict[str, str]:
-    token = create_access_token(subject=superuser.id, extra_claims={"email": superuser.email, "is_superuser": True})
+    token = create_access_token(
+        subject=superuser.id,
+        tenant_id=str(superuser.tenant_id),
+        extra_claims={"email": superuser.email, "is_superuser": True},
+    )
     return {"Authorization": f"Bearer {token}"}

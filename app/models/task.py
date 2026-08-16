@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 
 class TaskStatus(str, enum.Enum):
@@ -26,7 +27,7 @@ class TaskPriority(str, enum.Enum):
     URGENT = "urgent"
 
 
-class Task(BaseModel):
+class Task(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "tasks"
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)

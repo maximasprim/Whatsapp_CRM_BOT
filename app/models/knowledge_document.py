@@ -4,10 +4,13 @@ import uuid
 import enum
 
 from sqlalchemy import Enum as SAEnum, ForeignKey, Index, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+# from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
+from app.core.database.types import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 
 class DocumentStatus(str, enum.Enum):
@@ -17,7 +20,7 @@ class DocumentStatus(str, enum.Enum):
     FAILED = "failed"
 
 
-class KnowledgeDocument(BaseModel):
+class KnowledgeDocument(TenantMixin, BaseModel):
     __tablename__ = "knowledge_documents"
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -41,7 +44,7 @@ class KnowledgeDocument(BaseModel):
     )
 
 
-class DocumentChunk(BaseModel):
+class DocumentChunk(TenantMixin, BaseModel):
     __tablename__ = "document_chunks"
 
     document_id: Mapped[uuid.UUID] = mapped_column(

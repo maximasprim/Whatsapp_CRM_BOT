@@ -30,7 +30,7 @@ def _build_text_payload(from_number: str, message_id: str, text: str) -> dict:
 @pytest.mark.asyncio
 class TestWebhookVerification:
     async def test_verify_webhook_returns_challenge_for_correct_token(self, client: AsyncClient):
-        resp = await client.get("/api/v1/whatsapp/webhook", params={
+        resp = await client.get("/api/whatsapp/webhook", params={
             "hub.mode": "subscribe",
             "hub.verify_token": "test-verify-token",
             "hub.challenge": "CHALLENGE_12345",
@@ -39,7 +39,7 @@ class TestWebhookVerification:
         assert resp.text == "12345"
 
     async def test_verify_webhook_returns_403_for_wrong_token(self, client: AsyncClient):
-        resp = await client.get("/api/v1/whatsapp/webhook", params={
+        resp = await client.get("/api/whatsapp/webhook", params={
             "hub.mode": "subscribe",
             "hub.verify_token": "wrong-token",
             "hub.challenge": "CHALLENGE_ABC",
@@ -55,7 +55,7 @@ class TestWebhookMessageReceiving:
             message_id="wamid.unique001",
             text="Hello I need help with my order",
         )
-        resp = await client.post("/api/v1/whatsapp/webhook", json=payload)
+        resp = await client.post("/api/whatsapp/webhook", json=payload)
         assert resp.status_code == 200
 
     async def test_status_update_payload_returns_200(self, client: AsyncClient):
@@ -76,9 +76,9 @@ class TestWebhookMessageReceiving:
                 }],
             }],
         }
-        resp = await client.post("/api/v1/whatsapp/webhook", json=payload)
+        resp = await client.post("/api/whatsapp/webhook", json=payload)
         assert resp.status_code == 200
 
     async def test_empty_entry_list_returns_200(self, client: AsyncClient):
-        resp = await client.post("/api/v1/whatsapp/webhook", json={"entry": []})
+        resp = await client.post("/api/whatsapp/webhook", json={"entry": []})
         assert resp.status_code == 200

@@ -13,39 +13,46 @@ def send_appointment_reminders() -> dict:
 
 
 async def _send_appointment_reminders() -> dict:
+    from sqlalchemy import select
     from app.core.database.base import AsyncSessionLocal
+    from app.models.tenant import Tenant
     from app.repositories.crm import AppointmentRepository, CustomerRepository
     from app.notifications.engine import NotificationChannel, NotificationEngine
 
     sent = 0
     async with AsyncSessionLocal() as session:
-        appt_repo = AppointmentRepository(session)
-        cust_repo = CustomerRepository(session)
-        engine = NotificationEngine(session)
-        upcoming = await appt_repo.get_upcoming(minutes_ahead=60)
+        tenants = (
+            await session.execute(select(Tenant).where(Tenant.is_active == True))
+        ).scalars().all()
 
-        for appt in upcoming:
-            try:
-                customer = await cust_repo.get_by_id(appt.customer_id)
-                if customer and customer.phone:
-                    channels = [NotificationChannel.WHATSAPP]
-                    if customer.email:
-                        channels.append(NotificationChannel.EMAIL)
-                    await engine.send_templated(
-                        template_key="appointment_reminder",
-                        context={
-                            "first_name": customer.first_name,
-                            "appointment_title": appt.title,
-                            "appointment_time": appt.start_time.strftime("%H:%M"),
-                        },
-                        channels=channels,
-                        whatsapp_to=customer.phone,
-                        email_to=customer.email,
-                    )
-                    await appt_repo.update(appt, reminder_sent=True)
-                    sent += 1
-            except Exception as e:
-                logger.error("Appointment reminder failed", appt_id=str(appt.id), error=str(e))
+        for tenant in tenants:
+            appt_repo = AppointmentRepository(session, tenant_id=tenant.id)
+            cust_repo = CustomerRepository(session, tenant_id=tenant.id)
+            engine = NotificationEngine(session, tenant_id=tenant.id)
+            upcoming = await appt_repo.get_upcoming(minutes_ahead=60)
+
+            for appt in upcoming:
+                try:
+                    customer = await cust_repo.get_by_id(appt.customer_id)
+                    if customer and customer.phone:
+                        channels = [NotificationChannel.WHATSAPP]
+                        if customer.email:
+                            channels.append(NotificationChannel.EMAIL)
+                        await engine.send_templated(
+                            template_key="appointment_reminder",
+                            context={
+                                "first_name": customer.first_name,
+                                "appointment_title": appt.title,
+                                "appointment_time": appt.start_time.strftime("%H:%M"),
+                            },
+                            channels=channels,
+                            whatsapp_to=customer.phone,
+                            email_to=customer.email,
+                        )
+                        await appt_repo.update(appt, reminder_sent=True)
+                        sent += 1
+                except Exception as e:
+                    logger.error("Appointment reminder failed", appt_id=str(appt.id), tenant_id=str(tenant.id), error=str(e))
 
         await session.commit()
     return {"sent": sent}

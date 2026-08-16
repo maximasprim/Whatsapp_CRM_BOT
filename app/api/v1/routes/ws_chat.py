@@ -91,7 +91,7 @@ async def websocket_chat(websocket: WebSocket, token: str = Query(...)) -> None:
                     )
 
             elif event_type == WSEventType.MARK_READ.value:
-                await _handle_mark_read(data)
+                await _handle_mark_read(data, user_id)
 
             else:
                 await websocket.send_text(json.dumps(build_event(WSEventType.ERROR, {"message": f"Unknown event: {event_type}"})))
@@ -111,8 +111,20 @@ async def _handle_send_message(websocket: WebSocket, user_id: uuid.UUID, data: d
         return
 
     async with AsyncSessionLocal() as session:
+        from app.models.auth import User
         from app.whatsapp.conversation_service import WhatsAppConversationService
-        service = WhatsAppConversationService(session)
+
+        user = await session.get(User, user_id)
+        if not user or not user.tenant_id:
+            await websocket.send_text(json.dumps(build_event(WSEventType.ERROR, {"message": "User has no tenant assigned."})))
+            return
+        from app.models.tenant import Tenant
+        tenant = await session.get(Tenant, user.tenant_id)
+        if not tenant:
+            await websocket.send_text(json.dumps(build_event(WSEventType.ERROR, {"message": "Tenant not found."})))
+            return
+
+        service = WhatsAppConversationService(session, tenant=tenant)
         try:
             message = await service.send_reply(uuid.UUID(conv_id_str), text, sender_id=user_id)
             await session.commit()
@@ -131,14 +143,18 @@ async def _handle_send_message(websocket: WebSocket, user_id: uuid.UUID, data: d
             await websocket.send_text(json.dumps(build_event(WSEventType.ERROR, {"message": str(exc)})))
 
 
-async def _handle_mark_read(data: dict) -> None:
+async def _handle_mark_read(data: dict, user_id: uuid.UUID) -> None:
     conv_id_str = data.get("conversation_id")
     if not conv_id_str:
         return
     async with AsyncSessionLocal() as session:
+        from app.models.auth import User
         from app.models.conversation import Conversation
+        user = await session.get(User, user_id)
+        if not user or not user.tenant_id:
+            return
         conv = await session.get(Conversation, uuid.UUID(conv_id_str))
-        if conv:
+        if conv and conv.tenant_id == user.tenant_id:
             conv.unread_count = 0
             session.add(conv)
             await session.commit()

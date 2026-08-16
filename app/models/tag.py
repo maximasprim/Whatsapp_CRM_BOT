@@ -4,9 +4,10 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database.base import BaseModel
+from app.models.tenant_mixin import TenantMixin
 
 
-class Tag(BaseModel):
+class Tag(TenantMixin, BaseModel):    # ← ADD TenantMixin
     __tablename__ = "tags"
 
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)

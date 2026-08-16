@@ -62,14 +62,15 @@ Conversation history: {history}
 
 
 class AICRMEngine:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
         self.session = session
+        self.tenant_id = tenant_id
         self.provider = get_ai_provider()
-        self.customer_repo = CustomerRepository(session)
-        self.activity_repo = ActivityRepository(session)
-        self.note_service = NoteService(session)
-        self.task_service = TaskService(session)
-        self.lead_service = LeadService(session)
+        self.customer_repo = CustomerRepository(session, tenant_id=tenant_id)
+        self.activity_repo = ActivityRepository(session, tenant_id=tenant_id)
+        self.note_service = NoteService(session, tenant_id=tenant_id)
+        self.task_service = TaskService(session, tenant_id=tenant_id)
+        self.lead_service = LeadService(session, tenant_id=tenant_id)
 
     async def analyze_message(
         self,
