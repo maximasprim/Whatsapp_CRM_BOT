@@ -194,7 +194,7 @@ async def configure_ai(
 
 @router.get("/me/webhook-url")
 async def get_webhook_url(
-    request: Annotated[object, Depends(lambda r: r)],
+    # request: Annotated[object, Depends(lambda r: r)],
     current_tenant: Annotated[Tenant, Depends(get_current_tenant)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict:
