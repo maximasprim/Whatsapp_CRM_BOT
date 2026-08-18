@@ -77,7 +77,7 @@ class AuthService:
         user.roles = roles
         self.session.add(user)
         await self.session.flush()
-        await self.session.refresh(user)
+        # await self.session.refresh(user)
         return user
 
     # ── Login ─────────────────────────────────────────────────────────────────
@@ -236,7 +236,7 @@ class AuthService:
             user.roles = roles
         self.session.add(user)
         await self.session.flush()
-        await self.session.refresh(user)
+        # await self.session.refresh(user)
         return user
 
     # ── Role management ───────────────────────────────────────────────────────
@@ -252,7 +252,7 @@ class AuthService:
         role.permissions = perms
         self.session.add(role)
         await self.session.flush()
-        await self.session.refresh(role)
+        # await self.session.refresh(role)
         return role
 
     async def create_permission(self, data: PermissionCreate) -> Permission:
