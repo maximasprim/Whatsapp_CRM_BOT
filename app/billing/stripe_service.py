@@ -31,7 +31,7 @@ PLANS = {
     "pro": {
         "name": "Pro",
         "price_monthly": 2900,    # $29/month in cents
-        "stripe_price_id": "price_pro_monthly",  # Set your Stripe price ID
+        "stripe_price_id": "price_1U5gBQRswI1Rz1KkzsmHWZ8X",  # Set your Stripe price ID
         "max_users": 20,
         "max_customers": 5000,
         "max_messages_per_month": 10000,
@@ -40,7 +40,7 @@ PLANS = {
     "enterprise": {
         "name": "Enterprise",
         "price_monthly": 9900,    # $99/month in cents
-        "stripe_price_id": "price_enterprise_monthly",
+        "stripe_price_id": "price_1U5gD3RswI1Rz1KkbvHKSptm",
         "max_users": 9999,
         "max_customers": 999999,
         "max_messages_per_month": 999999,
